@@ -6,12 +6,14 @@ umask 077
 TARGET_USER=''
 WORKSPACE='/opt/RELab'
 PORT=8443
-usage() { echo 'Usage: sudo bash scripts/install-code-server.sh --user USER [--workspace /opt/RELab] [--port 8443]'; }
+PASSWORD=''
+usage() { echo 'Usage: sudo bash scripts/install-code-server.sh --user USER [--workspace /opt/RELab] [--port 8443] [--password PASS]'; }
 while (($#)); do
   case "$1" in
     --user) TARGET_USER="${2:?}"; shift 2 ;;
     --workspace) WORKSPACE="${2:?}"; shift 2 ;;
     --port) PORT="${2:?}"; shift 2 ;;
+    --password) PASSWORD="${2:?}"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown argument: $1" >&2; exit 2 ;;
   esac
@@ -27,7 +29,8 @@ account_entry=$(getent passwd "$TARGET_USER")
 HOME_DIR=$(printf '%s' "$account_entry" | cut -d: -f6)
 [[ -d $HOME_DIR && $HOME_DIR == /* && $HOME_DIR != *[[:space:]]* ]] || { echo 'Unsupported or missing user home directory' >&2; exit 1; }
 export DEBIAN_FRONTEND=noninteractive
-apt-get install -y ca-certificates curl
+APT_OPTS=(-y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold")
+apt-get install "${APT_OPTS[@]}" ca-certificates curl
 if ! command -v code-server >/dev/null 2>&1; then
   tmp=$(mktemp -d)
   trap 'rm -rf "$tmp"' EXIT
@@ -41,15 +44,19 @@ binary=$(command -v code-server)
 config_dir="$HOME_DIR/.config/relab-code-server"
 config_file="$config_dir/config.yaml"
 install -d -m 0700 -o "$TARGET_USER" -g "$(id -gn "$TARGET_USER")" "$config_dir"
-if [[ ! -f $config_file ]]; then
+if [[ -n $PASSWORD ]]; then
+  pass="$PASSWORD"
+elif [[ -f $config_file ]] && grep -q '^password:' "$config_file"; then
+  pass=$(awk -F': *' '/^password:/ {print $2}' "$config_file")
+else
   pass=$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')
-  cat > "$config_file" <<CONF
+fi
+cat > "$config_file" <<CONF
 bind-addr: 127.0.0.1:$PORT
 auth: password
 password: $pass
 cert: false
 CONF
-fi
 chown "$TARGET_USER:$(id -gn "$TARGET_USER")" "$config_file"
 chmod 600 "$config_file"
 

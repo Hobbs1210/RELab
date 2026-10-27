@@ -4,26 +4,91 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 command -v docker >/dev/null || { echo 'Docker and Docker Compose required'; exit 1; }
 command -v python3 >/dev/null || { echo 'Python 3 required'; exit 1; }
-if [[ ! -f .env ]]; then cp .env.example .env; chmod 600 .env; fi
+
+# [Port 53 Resolution] If systemd-resolved is active and stub listener is bound to port 53, disable stub
+if [[ ${EUID:-$(id -u)} -eq 0 ]]; then
+  if command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet systemd-resolved 2>/dev/null; then
+    if ss -tulpn 2>/dev/null | grep -E ':(53)\b' | grep -q 'systemd-resolve'; then
+      echo 'Resolving port 53 conflict: disabling systemd-resolved DNSStubListener...'
+      mkdir -p /etc/systemd/resolved.conf.d
+      printf '[Resolve]\nDNSStubListener=no\n' > /etc/systemd/resolved.conf.d/relab-stub.conf
+      if [[ -f /run/systemd/resolve/resolv.conf ]]; then
+        ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf 2>/dev/null || true
+      fi
+      systemctl restart systemd-resolved 2>/dev/null || true
+    fi
+  fi
+fi
+
+# [Safe Atomic .env Update with Backup]
 python3 - <<'PY'
 from pathlib import Path
-import secrets
-p=Path('.env')
-s=p.read_text()
+import os, shutil, secrets, re
+
+p = Path('.env')
+bak = Path('.env.bak')
+if p.exists():
+    shutil.copy2(p, bak)
+    s = p.read_text()
+else:
+    s = Path('.env.example').read_text()
+
+re_pass = None
+for line in s.splitlines():
+    if line.startswith('RE_USER_PASSWORD='):
+        val = line.split('=', 1)[1].strip()
+        if val: re_pass = val
+
+if 'ADGUARD_USERNAME=' not in s:
+    s += '\nADGUARD_USERNAME=re\n'
+elif 'ADGUARD_USERNAME=admin' in s:
+    s = s.replace('ADGUARD_USERNAME=admin', 'ADGUARD_USERNAME=re')
+
 if 'ADGUARD_PASSWORD=' not in s:
-    s+='\nADGUARD_PASSWORD=\n'
-s=s.replace('ADGUARD_PASSWORD=\n', 'ADGUARD_PASSWORD='+secrets.token_urlsafe(24)+'\n')
-if 'LAB_ADMIN_TOKEN=' not in s:s+='\nLAB_ADMIN_TOKEN=\n'
-s=s.replace('LAB_ADMIN_TOKEN=\n','LAB_ADMIN_TOKEN='+secrets.token_urlsafe(36)+'\n')
-if 'RESEARCH_DB_PASSWORD=' not in s:s+='\nRESEARCH_DB_PASSWORD=\n'
-s=s.replace('RESEARCH_DB_PASSWORD=\n','RESEARCH_DB_PASSWORD='+secrets.token_urlsafe(32)+'\n')
+    s += '\nADGUARD_PASSWORD=\n'
+
+if re_pass:
+    s = re.sub(r'(?m)^ADGUARD_PASSWORD=.*$', 'ADGUARD_PASSWORD=' + re_pass, s)
+elif not re.search(r'(?m)^ADGUARD_PASSWORD=.+$', s):
+    s = s.replace('ADGUARD_PASSWORD=\n', 'ADGUARD_PASSWORD=' + secrets.token_urlsafe(24) + '\n')
+
+if 'LAB_ADMIN_TOKEN=' not in s: s += '\nLAB_ADMIN_TOKEN=\n'
+if not re.search(r'(?m)^LAB_ADMIN_TOKEN=.+$', s):
+    s = s.replace('LAB_ADMIN_TOKEN=\n', 'LAB_ADMIN_TOKEN=' + secrets.token_urlsafe(36) + '\n')
+
+if 'RESEARCH_DB_PASSWORD=' not in s: s += '\nRESEARCH_DB_PASSWORD=\n'
+if not re.search(r'(?m)^RESEARCH_DB_PASSWORD=.+$', s):
+    s = s.replace('RESEARCH_DB_PASSWORD=\n', 'RESEARCH_DB_PASSWORD=' + secrets.token_urlsafe(32) + '\n')
+
 # Keep bind-mounted output directories writable as the invoking host user.
-import os
-for key,value in [('LAB_UID',os.environ.get('LAB_UID_OVERRIDE',str(os.getuid()))),('LAB_GID',os.environ.get('LAB_GID_OVERRIDE',str(os.getgid())))]:
-    import re
-    s=re.sub(r'(?m)^'+key+r'=.*$',key+'='+value,s)
-p.write_text(s)
-p.chmod(0o600)
+for key, value in [('LAB_UID', os.environ.get('LAB_UID_OVERRIDE', str(os.getuid()))),
+                   ('LAB_GID', os.environ.get('LAB_GID_OVERRIDE', str(os.getgid())))]:
+    s = re.sub(r'(?m)^' + key + r'=.*$', key + '=' + value, s)
+
+tmp = Path('.env.tmp.' + str(os.getpid()))
+tmp.write_text(s)
+tmp.chmod(0o600)
+os.replace(tmp, p)
+PY
+
+# [Port Collision Pre-check]
+python3 - <<'PY'
+import socket
+ports = [(53, 'DNS (AdGuard)'), (3000, 'AdGuard Web UI'), (8090, 'Lab API'), (8310, 'Workbench'), (8320, 'Research Hub')]
+conflicts = []
+for p, desc in ports:
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind(('127.0.0.1', p))
+    except OSError:
+        conflicts.append((p, desc))
+    finally:
+        s.close()
+if conflicts:
+    print('Notice [Port Check]: The following ports are active on host (normal on reruns):')
+    for p, desc in conflicts:
+        print(f'  - Port {p}: {desc}')
 PY
 mkdir -p data/{api,pcaps,mitm,ble,nginx,analysis,ghidra,workbench,firmware-extracted,sbom,emulation,fuzz,research,mobile,serial,research-imports} firmware certs config/adguard/{work,conf}
 

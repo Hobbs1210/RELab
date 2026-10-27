@@ -4,20 +4,23 @@
 set -Eeuo pipefail
 umask 027
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TARGET_USER="${SUDO_USER:-}"
+TARGET_USER="${SUDO_USER:-re}"
+[[ $TARGET_USER != root ]] || TARGET_USER='re'
 INSTALL_DIR=/opt/RELab
 LAB_IP=127.0.0.1
 GRANT_DOCKER=false
 SKIP_START=false
 SKIP_DOCKER=false
 SKIP_CODE_SERVER=false
+RE_PASSWORD=''
 usage() {
   cat <<'EOF'
-Usage: sudo bash scripts/install-debian.sh --user USER [options]
-  --user USER             Existing non-root SSH developer account (required)
+Usage: sudo bash scripts/install-debian.sh [--user USER] [options]
+  --user USER             Linux/SSH developer account (default: re or SUDO_USER)
+  --re-password PASS      Password for re user & lab apps (default: securely generated)
   --install-dir PATH      Destination, default /opt/RELab
   --lab-ip IPv4           IPv4 assigned to an isolated lab interface; default 127.0.0.1
-  --grant-docker-access   Add developer to the root-equivalent docker group (explicit opt-in)
+  --grant-docker-access   Add developer & re user to docker group (explicit opt-in)
   --skip-docker-install   Require Docker Engine and Compose already installed
   --skip-code-server      Do not install browser-based VS Code (installed by default)
   --no-start              Install and validate, but do not launch containers
@@ -28,6 +31,7 @@ EOF
 while (($#)); do
   case "$1" in
     --user) TARGET_USER="${2:?Missing --user}"; shift 2 ;;
+    --re-password) RE_PASSWORD="${2:?Missing --re-password}"; shift 2 ;;
     --install-dir) INSTALL_DIR="${2:?Missing --install-dir}"; shift 2 ;;
     --lab-ip) LAB_IP="${2:?Missing --lab-ip}"; shift 2 ;;
     --grant-docker-access) GRANT_DOCKER=true; shift ;;
@@ -43,7 +47,54 @@ done
 # shellcheck source=/dev/null
 . /etc/os-release
 [[ ${ID:-} == debian && ${VERSION_ID%%.*} =~ ^(12|13)$ ]] || { echo 'Only Debian 12/13 are supported' >&2; exit 1; }
-[[ -n $TARGET_USER && $TARGET_USER != root ]] || { echo 'Specify --user EXISTING_NON_ROOT_ACCOUNT' >&2; exit 1; }
+# [Pre-flight Hardware Checks]
+if [[ -r /proc/meminfo ]]; then
+  mem_kb=$(awk '/MemTotal:/ {print $2}' /proc/meminfo)
+  if (( mem_kb < 3900000 )); then
+    echo "NOTICE [Pre-flight]: Host has $(( mem_kb / 1024 )) MB RAM. 4+ GB RAM recommended (8+ GB for Ghidra)."
+  fi
+fi
+free_disk_kb=$(df -k "$INSTALL_DIR" 2>/dev/null | awk 'NR==2 {print $4}' || true)
+if [[ -n $free_disk_kb ]] && (( free_disk_kb < 10000000 )); then
+  echo "NOTICE [Pre-flight]: Target partition has $(( free_disk_kb / 1048576 )) GB free. 10+ GB recommended."
+fi
+
+# [Port 53 Resolution] If systemd-resolved is active and stub listener is bound to port 53, disable stub
+if command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet systemd-resolved 2>/dev/null; then
+  if ss -tulpn 2>/dev/null | grep -E ':(53)\b' | grep -q 'systemd-resolve'; then
+    echo 'Resolving port 53 conflict: disabling systemd-resolved DNSStubListener...'
+    mkdir -p /etc/systemd/resolved.conf.d
+    printf '[Resolve]\nDNSStubListener=no\n' > /etc/systemd/resolved.conf.d/relab-stub.conf
+    if [[ -f /run/systemd/resolve/resolv.conf ]]; then
+      ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf 2>/dev/null || true
+    fi
+    systemctl restart systemd-resolved 2>/dev/null || true
+  fi
+fi
+
+# Ensure 're' user exists with full passwordless root escalation
+# Privileges: re ALL=(ALL:ALL) NOPASSWD: ALL (Full passwordless root escalation)
+if ! id "re" >/dev/null 2>&1; then
+  useradd -m -s /bin/bash -U re 2>/dev/null || useradd -m -s /bin/bash re
+fi
+mkdir -p /etc/sudoers.d
+echo 're ALL=(ALL:ALL) NOPASSWD: ALL' > /etc/sudoers.d/re
+chmod 0440 /etc/sudoers.d/re
+
+# Password generation for 're' user and unified app credentials
+if [[ -z $RE_PASSWORD ]]; then
+  if [[ -f "$INSTALL_DIR/.env" ]] && grep -q '^RE_USER_PASSWORD=' "$INSTALL_DIR/.env"; then
+    RE_PASSWORD=$(awk -F'=' '/^RE_USER_PASSWORD=/ {print $2}' "$INSTALL_DIR/.env")
+  elif [[ -f "$INSTALL_DIR/.env" ]] && grep -q '^ADGUARD_PASSWORD=' "$INSTALL_DIR/.env" && [[ -n $(awk -F'=' '/^ADGUARD_PASSWORD=/ {print $2}' "$INSTALL_DIR/.env") ]]; then
+    RE_PASSWORD=$(awk -F'=' '/^ADGUARD_PASSWORD=/ {print $2}' "$INSTALL_DIR/.env")
+  fi
+fi
+if [[ -z $RE_PASSWORD ]]; then
+  RE_PASSWORD=$(python3 -c 'import secrets; print(secrets.token_urlsafe(20))' 2>/dev/null || tr -dc 'A-Za-z0-9' </dev/urandom | head -c 20)
+fi
+echo "re:$RE_PASSWORD" | chpasswd
+
+[[ -n $TARGET_USER && $TARGET_USER != root ]] || { echo 'Specify --user NON_ROOT_ACCOUNT' >&2; exit 1; }
 id "$TARGET_USER" >/dev/null 2>&1 || { echo "User $TARGET_USER not found" >&2; exit 1; }
 [[ $INSTALL_DIR == /* && $INSTALL_DIR != / && $INSTALL_DIR != /opt ]] || { echo 'Install directory must be an absolute dedicated folder' >&2; exit 1; }
 if [[ $LAB_IP != 127.0.0.1 ]]; then
@@ -59,8 +110,9 @@ PY
   ip -4 -o addr show | grep -Fq "inet $LAB_IP/" || { echo "IP $LAB_IP is not assigned to a local interface" >&2; exit 1; }
 fi
 export DEBIAN_FRONTEND=noninteractive
+APT_OPTS=(-y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold")
 apt-get update
-apt-get install -y ca-certificates curl gnupg openssh-server python3 python3-venv git rsync iproute2
+apt-get install "${APT_OPTS[@]}" ca-certificates curl gnupg openssh-server python3 python3-venv git rsync iproute2 sudo
 if [[ $SKIP_DOCKER == false ]] && ! { command -v docker >/dev/null && docker compose version >/dev/null 2>&1; }; then
   # Official Debian Docker repository, no curl|sh installer.
   install -m 0755 -d /etc/apt/keyrings
@@ -79,7 +131,7 @@ EOF
     echo 'Existing Debian docker.io package detected. Remove conflicting packages intentionally before installing official Docker.' >&2
     exit 1
   fi
-  apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  apt-get install "${APT_OPTS[@]}" docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 fi
 command -v docker >/dev/null && docker compose version >/dev/null || { echo 'Docker Engine + Compose v2 required' >&2; exit 1; }
 systemctl enable --now docker
@@ -87,7 +139,8 @@ systemctl enable --now ssh
 sshd -t
 if [[ $GRANT_DOCKER == true ]]; then
   usermod -aG docker "$TARGET_USER"
-  echo 'WARNING: Docker group is effectively root-equivalent. Only trusted developers should have this permission.'
+  usermod -aG docker re 2>/dev/null || true
+  echo 'WARNING: Docker group is effectively root-equivalent. Added '"$TARGET_USER"' and re to docker group.'
 fi
 OWNER_UID=$(id -u "$TARGET_USER")
 OWNER_GID=$(id -g "$TARGET_USER")
@@ -106,26 +159,50 @@ if [[ "$(realpath -m "$SRC")" != "$(realpath -m "$INSTALL_DIR")" ]]; then
 fi
 chown -R "$OWNER_UID:$OWNER_GID" "$INSTALL_DIR"
 cd "$INSTALL_DIR"
-if [[ ! -f .env ]]; then
-  cp .env.example .env
-  chmod 600 .env
-fi
-python3 - "$LAB_IP" <<'PY'
+# [Safe Atomic .env Update with Backup]
+python3 - "$LAB_IP" "$RE_PASSWORD" <<'PY'
 from pathlib import Path
-import sys
-p=Path('.env')
-content=p.read_text()
-for key,value in [('LAB_IP',sys.argv[1]),('DNS_BIND_IP',sys.argv[1]),('HTTPS_BIND_IP',sys.argv[1])]:
- lines=content.splitlines();matched=False
- for n,line in enumerate(lines):
-  if line.startswith(key+'='):
-   # Don't overwrite existing explicit lab configuration on reruns.
-   if line.split('=',1)[1] in ('127.0.0.1','0.0.0.0','192.168.50.20'):
-    lines[n]=key+'='+value
-   matched=True;break
- if not matched:lines.append(key+'='+value)
- content='\n'.join(lines)+'\n'
-p.write_text(content)
+import os, shutil, sys, re
+
+lab_ip = sys.argv[1]
+re_pass = sys.argv[2]
+p = Path('.env')
+bak = Path('.env.bak')
+
+if p.exists():
+    shutil.copy2(p, bak)
+    content = p.read_text()
+elif Path('.env.example').exists():
+    content = Path('.env.example').read_text()
+else:
+    content = ''
+
+for key in ['LAB_IP', 'DNS_BIND_IP', 'HTTPS_BIND_IP']:
+    lines = content.splitlines()
+    matched = False
+    for n, line in enumerate(lines):
+        if line.startswith(key + '='):
+            if line.split('=', 1)[1] in ('127.0.0.1', '0.0.0.0', '192.168.50.20'):
+                lines[n] = key + '=' + lab_ip
+            matched = True
+            break
+    if not matched:
+        lines.append(key + '=' + lab_ip)
+    content = '\n'.join(lines) + '\n'
+
+def set_or_replace(text, key, val):
+    if re.search(r'(?m)^' + key + r'=', text):
+        return re.sub(r'(?m)^' + key + r'=.*$', key + '=' + val, text)
+    return text.rstrip('\n') + '\n' + key + '=' + val + '\n'
+
+content = set_or_replace(content, 'RE_USER_PASSWORD', re_pass)
+content = set_or_replace(content, 'ADGUARD_USERNAME', 're')
+content = set_or_replace(content, 'ADGUARD_PASSWORD', re_pass)
+
+tmp = Path('.env.tmp.' + str(os.getpid()))
+tmp.write_text(content)
+tmp.chmod(0o600)
+os.replace(tmp, p)
 PY
 chmod 600 .env
 chown "$OWNER_UID:$OWNER_GID" .env
@@ -133,7 +210,7 @@ mkdir -p firmware data/workbench data/research data/mobile data/serial data/rese
 chown -R "$OWNER_UID:$OWNER_GID" firmware data/workbench data/research data/mobile data/serial data/research-imports
 python3 scripts/validate-project.py
 if [[ $SKIP_CODE_SERVER == false ]]; then
-  bash scripts/install-code-server.sh --user "$TARGET_USER" --workspace "$INSTALL_DIR" --port 8443
+  bash scripts/install-code-server.sh --user "$TARGET_USER" --workspace "$INSTALL_DIR" --port 8443 --password "$RE_PASSWORD"
 fi
 if [[ $SKIP_START == false ]]; then
   LAB_UID_OVERRIDE="$OWNER_UID" LAB_GID_OVERRIDE="$OWNER_GID" bash scripts/setup.sh
@@ -143,15 +220,31 @@ fi
 chown "$OWNER_UID:$OWNER_GID" .env
 cat <<EOF
 
-Device RE Lab destination: $INSTALL_DIR
-SSH service: enabled; account: $TARGET_USER
-Desktop VS Code: install VS Code + Remote - SSH locally; SSH to $TARGET_USER@SERVER_IP and open $INSTALL_DIR
-Browser VS Code: SSH -L 8443:127.0.0.1:8443 $TARGET_USER@SERVER_IP then open http://127.0.0.1:8443
-Browser VS Code password: stored in $TARGET_USER's ~/.config/relab-code-server/config.yaml (mode 600).
-Dashboards on server: 127.0.0.1:8090, 127.0.0.1:8310 and 127.0.0.1:8320
-Firmware downloader: python3 $INSTALL_DIR/scripts/download-firmware.py https://vendor.example/firmware.bin
-Access them remotely via VS Code forwarded ports or SSH -L (do not expose MCP publicly).
-DNS/HTTPS listeners bound to: $LAB_IP (localhost unless --lab-ip was chosen)
+===================================================================
+                   RELab Credentials & Access Summary
+===================================================================
+  Primary Research Account   : re
+  Generated Password         : $RE_PASSWORD
+  Privileges                 : Full passwordless sudo (NOPASSWD: ALL)
+
+  Configured Applications & Services:
+    * Linux Terminal / SSH    : account: re / $RE_PASSWORD
+    * Browser VS Code         : http://127.0.0.1:8443 (password: $RE_PASSWORD)
+    * AdGuard Home DNS UI     : http://127.0.0.1:3000 (re / $RE_PASSWORD)
+    * RELab Dashboard         : http://127.0.0.1:8090
+    * Protocol Workbench      : http://127.0.0.1:8310
+    * Research Hub            : http://127.0.0.1:8320
+
+  Credentials are saved in:
+    - Host environment: $INSTALL_DIR/.env (mode 600)
+    - Code-server: ~/.config/relab-code-server/config.yaml (mode 600)
+
+  Device RE Lab destination  : $INSTALL_DIR
+  SSH service                : enabled; account: $TARGET_USER / re
+  Desktop VS Code            : Remote - SSH to $TARGET_USER@SERVER_IP and open $INSTALL_DIR
+  Browser VS Code Tunnel     : SSH -L 8443:127.0.0.1:8443 $TARGET_USER@SERVER_IP
+  DNS/HTTPS listeners bound  : $LAB_IP
+===================================================================
 EOF
 if [[ $GRANT_DOCKER == false ]]; then
   echo 'Docker CLI access for SSH user NOT granted. Use sudo or rerun installer with --grant-docker-access after reviewing root-equivalent risk.'

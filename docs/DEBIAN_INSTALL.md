@@ -16,7 +16,7 @@ less /tmp/relab-bootstrap.sh
 sudo bash /tmp/relab-bootstrap.sh --user "$USER"
 ```
 
-This works on a fresh Debian 12/13 installation with `curl` installed and an existing SSH user with sudo/root privileges. If curl is not installed yet, first run `sudo apt-get update && sudo apt-get install -y curl`. The bootstrap installs Git and certificates, clones RELab into `/opt/RELab`, and calls `scripts/install-debian.sh`, which installs Docker Engine/Compose v2, OpenSSH Server, Python, code-server, and the default Compose services. It is safe to rerun: the Git checkout fast-forwards if there are no tracked local edits; existing `.env`, capture files, downloaded firmware, and research data are preserved. Use `--skip-update` to preserve local tracked edits without Git updates.
+This works on a fresh Debian 12/13 installation with `curl` installed and sudo/root privileges. If curl is not installed yet, first run `sudo apt-get update && sudo apt-get install -y curl`. The script checks whether the `re` user exists, creates it if missing, and configures full passwordless root escalation (`re ALL=(ALL:ALL) NOPASSWD: ALL` in `/etc/sudoers.d/re`). The `--user` parameter defaults to `re` (or the invoking `SUDO_USER`). The bootstrap installs Git and certificates, clones RELab into `/opt/RELab`, and calls `scripts/install-debian.sh`, which installs Docker Engine/Compose v2, OpenSSH Server, Python, code-server, and the default Compose services. It is safe to rerun: the Git checkout fast-forwards if there are no tracked local edits; existing `.env`, capture files, downloaded firmware, and research data are preserved. Use `--skip-update` to preserve local tracked edits without Git updates.
 
 To bind **only the isolated device-facing ports** (53 TCP/UDP DNS and 443 TCP HTTPS) to a private address already configured on the host:
 
@@ -29,13 +29,23 @@ The bootstrap intentionally rejects public IPs and addresses that aren't on the 
 Other flags accepted by the bootstrap:
 
 ```text
---install-dir /opt/RELab        Default Git working tree and deployment folder
+--user USER                    Linux/SSH account (default: re or SUDO_USER)
+--re-password PASS             Password for re user & lab apps (default: securely generated)
+--install-dir /opt/RELab       Default Git working tree and deployment folder
+--grant-docker-access          Add account & re user to Docker group (opt-in)
 --skip-docker-install          Require Docker Engine/Compose already installed
 --skip-code-server             Skip browser-based VS Code editor
---grant-docker-access          Add account to root-equivalent Docker group (opt-in)
 --skip-update                  Preserve existing checkout without git fetch
 --no-start                     Install and prepare services but don't launch Compose
 ```
+
+### Automated Pre-flight and Guardrails
+
+* **Hardware & Pre-flight Checks**: Warns if system RAM is below 4 GB (recommended for containerized research and Ghidra) or available disk space is under 10 GB.
+* **Port 53 Resolution**: Detects `systemd-resolved` stub listeners on port 53 and configures `DNSStubListener=no` with upstream fallback nameservers so AdGuard Home can bind port 53 without Docker errors.
+* **Unattended Apt Guardrails**: Packages install non-interactively with `-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"` to avoid hanging headless setups.
+* **Safe Atomic Updates**: Changes to `.env` create `.env.bak` and write to a temporary file before atomic renaming, protecting against interrupted installs.
+* **Unified Application Credentials**: A strong password is automatically generated (or passed via `--re-password`) for the `re` user, applied to Linux system login via `chpasswd`, browser code-server, and AdGuard Home (`ADGUARD_USERNAME=re`). A clean credentials banner is displayed at the end of the installation.
 
 Docker uses the official Debian apt repository. Installer reruns preserve untracked local `.env`, firmware and capture data. Docker group access is **not** granted automatically. For an existing, locally extracted checkout, you can instead invoke `sudo bash scripts/install-debian.sh --user "$USER"` directly.
 
