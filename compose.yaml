@@ -46,7 +46,7 @@ services:
       ADGUARD_URL: http://dns:3000
       ADGUARD_USERNAME: ${ADGUARD_USERNAME:-admin}
       ADGUARD_PASSWORD: ${ADGUARD_PASSWORD:-SETUP_REQUIRED}
-    ports: ["127.0.0.1:8090:8000/tcp"]
+    ports: ["${API_BIND_IP:-0.0.0.0}:8090:8000/tcp"]
     volumes:
       - ./config:/config
       - ./firmware:/firmware:ro

@@ -205,7 +205,7 @@ elif Path('.env.example').exists():
 else:
     content = ''
 
-for key in ['LAB_IP', 'DNS_BIND_IP', 'HTTPS_BIND_IP']:
+for key in ['LAB_IP', 'DNS_BIND_IP', 'HTTPS_BIND_IP', 'API_BIND_IP']:
     lines = content.splitlines()
     matched = False
     for n, line in enumerate(lines):
