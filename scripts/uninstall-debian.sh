@@ -74,7 +74,7 @@ rm -f /etc/systemd/system/relab-code-server.service
 systemctl daemon-reload 2>/dev/null || true
 
 # 3. Clean up sudoers and systemd-resolved port 53 stub
-echo '[3/4] Cleaning system configurations...'
+echo '[3/5] Cleaning system configurations...'
 rm -f /etc/sudoers.d/re
 if [[ -f /etc/systemd/resolved.conf.d/relab-stub.conf ]]; then
   rm -f /etc/systemd/resolved.conf.d/relab-stub.conf
@@ -84,12 +84,34 @@ if [[ -f /etc/systemd/resolved.conf.d/relab-stub.conf ]]; then
   echo 'Restored systemd-resolved configuration.'
 fi
 
-# 4. Purge data directory if requested
+# 4. Clean up firewall rules if present
+echo '[4/5] Cleaning up firewall rules if configured...'
+if command -v ufw >/dev/null 2>&1; then
+  if ufw status 2>/dev/null | grep -qi "Status: active"; then
+    echo 'Removing RELab UFW rules...'
+    for port in 53 443 3000 8080 8081 8090 8310 8320 8443 8301 8302 8303 8304 8305 8306 8307 8308 8309 8311 8312 8313 8314 8315; do
+      ufw delete allow "$port/tcp" >/dev/null 2>&1 || true
+    done
+    ufw delete allow 53/udp >/dev/null 2>&1 || true
+  fi
+fi
+if command -v firewall-cmd >/dev/null 2>&1; then
+  if firewall-cmd --state >/dev/null 2>&1; then
+    echo 'Removing RELab firewalld rules...'
+    for port in 53 443 3000 8080 8081 8090 8310 8320 8443 8301 8302 8303 8304 8305 8306 8307 8308 8309 8311 8312 8313 8314 8315; do
+      firewall-cmd --permanent --remove-port="$port/tcp" >/dev/null 2>&1 || true
+    done
+    firewall-cmd --permanent --remove-port="53/udp" >/dev/null 2>&1 || true
+    firewall-cmd --reload >/dev/null 2>&1 || true
+  fi
+fi
+
+# 5. Purge data directory if requested
 if [[ $PURGE_DATA == true && -d "$INSTALL_DIR" ]]; then
-  echo "[4/4] Purging installation directory: $INSTALL_DIR..."
+  echo "[5/5] Purging installation directory: $INSTALL_DIR..."
   rm -rf "$INSTALL_DIR"
 else
-  echo '[4/4] Retaining workspace files and captures in '"$INSTALL_DIR"'.'
+  echo '[5/5] Retaining workspace files and captures in '"$INSTALL_DIR"'.'
 fi
 
 printf '\nRELab decommission finished successfully.\n'

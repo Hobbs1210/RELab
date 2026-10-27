@@ -154,6 +154,53 @@ if conflicts:
     for p, desc in conflicts:
         print(f'  - Port {p}: {desc}')
 PY
+
+# [Firewall Whitelisting (UFW / firewalld)]
+configure_firewall() {
+  local SUDO=""
+  if [[ $(id -u) -ne 0 ]]; then
+    if command -v sudo >/dev/null 2>&1; then
+      SUDO="sudo"
+    fi
+  fi
+
+  local ports_tcp=("53" "443" "3000" "8080" "8081" "8090" "8310" "8320" "8443" "8301" "8302" "8303" "8304" "8305" "8306" "8307" "8308" "8309" "8311" "8312" "8313" "8314" "8315")
+  local ports_udp=("53")
+
+  # UFW
+  if command -v ufw >/dev/null 2>&1; then
+    local ufw_status
+    ufw_status=$($SUDO ufw status 2>/dev/null || true)
+    if echo "$ufw_status" | grep -qi "Status: active"; then
+      echo 'Configuring active UFW firewall rules for RELab...'
+      $SUDO ufw allow 22/tcp comment 'RELab SSH' >/dev/null 2>&1 || true
+      for port in "${ports_tcp[@]}"; do
+        $SUDO ufw allow "$port/tcp" comment 'RELab service' >/dev/null 2>&1 || true
+      done
+      for port in "${ports_udp[@]}"; do
+        $SUDO ufw allow "$port/udp" comment 'RELab service' >/dev/null 2>&1 || true
+      done
+      echo '  [OK] UFW rules updated for RELab ports.'
+    fi
+  fi
+
+  # firewalld
+  if command -v firewall-cmd >/dev/null 2>&1; then
+    if $SUDO firewall-cmd --state >/dev/null 2>&1; then
+      echo 'Configuring active firewalld rules for RELab...'
+      $SUDO firewall-cmd --permanent --add-service=ssh >/dev/null 2>&1 || true
+      for port in "${ports_tcp[@]}"; do
+        $SUDO firewall-cmd --permanent --add-port="$port/tcp" >/dev/null 2>&1 || true
+      done
+      for port in "${ports_udp[@]}"; do
+        $SUDO firewall-cmd --permanent --add-port="$port/udp" >/dev/null 2>&1 || true
+      done
+      $SUDO firewall-cmd --reload >/dev/null 2>&1 || true
+      echo '  [OK] firewalld rules reloaded for RELab ports.'
+    fi
+  fi
+}
+configure_firewall
 mkdir -p data/{api,pcaps,mitm,ble,nginx,analysis,ghidra,workbench,firmware-extracted,sbom,emulation,fuzz,research,mobile,serial,research-imports} firmware certs config/adguard/{work,conf}
 
 echo '[1/3] Starting DNS server (AdGuard Home)'
