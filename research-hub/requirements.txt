@@ -3,6 +3,6 @@ uvicorn>=0.30,<1
 mcp<2,>=1.12.0
 fastapi-mcp==0.4.0
 sqlalchemy>=2.0,<3
-psycopg[binary]>=3.2,<4
+psycopg[binary]>=3.3.6,<4
 nats-py>=2.9,<3
 pyyaml>=6,<7
