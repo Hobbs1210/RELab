@@ -102,3 +102,45 @@ def test_adguard_setup_redirect_handling():
     assert 'HTTPRedirectHandler' in setup_body
     assert 'e.code not in (404, 400, 302)' in setup_body
 
+
+def test_ssh_key_provisioning_supported():
+    for name in ['bootstrap-debian.sh', 'install-debian.sh']:
+        body = (ROOT / 'scripts' / name).read_text(encoding='utf-8')
+        assert '--ssh-key' in body
+        assert 'authorized_keys' in body
+
+
+def test_uninstall_script_parses_and_has_help():
+    bash = _bash_cmd()
+    path = ROOT / 'scripts/uninstall-debian.sh'
+    assert path.is_file()
+    subprocess.run([bash, '-n', str(path)], check=True)
+    res = subprocess.run([bash, str(path), '--help'], capture_output=True, text=True, check=True)
+    assert '--apply' in res.stdout
+    assert '--purge-data' in res.stdout
+
+
+def test_gateway_dns_supports_status_and_timeout():
+    body = (ROOT / 'scripts/gateway-dns.sh').read_text(encoding='utf-8')
+    assert 'status' in body
+    assert '--timeout' in body
+
+
+def test_labctl_status_and_profile_commands():
+    body = (ROOT / 'scripts/labctl.py').read_text(encoding='utf-8')
+    assert "'status'" in body
+    assert "'set-profile'" in body
+
+
+def test_download_firmware_supports_registration():
+    body = (ROOT / 'scripts/download-firmware.py').read_text(encoding='utf-8')
+    assert '--register' in body
+    assert '_register_with_research_hub' in body
+
+
+def test_setup_subcommands_supported():
+    body = (ROOT / 'scripts/setup.sh').read_text(encoding='utf-8')
+    assert 'backup)' in body
+    assert 'status)' in body
+    assert 'restart)' in body
+

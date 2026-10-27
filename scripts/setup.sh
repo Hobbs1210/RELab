@@ -5,6 +5,50 @@ cd "$(dirname "$0")/.."
 command -v docker >/dev/null || { echo 'Docker and Docker Compose required'; exit 1; }
 command -v python3 >/dev/null || { echo 'Python 3 required'; exit 1; }
 
+ACTION="${1:-start}"
+
+case "$ACTION" in
+  status)
+    printf "=== RELab Docker Service Status ===\n"
+    docker compose ps
+    exit 0
+    ;;
+  stop)
+    printf "Stopping RELab services...\n"
+    docker compose stop
+    exit 0
+    ;;
+  restart)
+    printf "Restarting RELab services...\n"
+    docker compose restart
+    exit 0
+    ;;
+  logs)
+    docker compose logs -f --tail=50 "${2:-}"
+    exit 0
+    ;;
+  backup)
+    printf "Backing up research database...\n"
+    mkdir -p data/research/backups
+    ts=$(date +%Y%m%d_%H%M%S 2>/dev/null || python3 -c 'import time; print(time.strftime("%Y%m%d_%H%M%S"))')
+    backup_file="data/research/backups/research-db-${ts}.sql"
+    if docker compose ps -q research-db >/dev/null 2>&1 && [[ -n $(docker compose ps -q research-db) ]]; then
+      docker compose exec -T research-db pg_dump -U research -d research > "$backup_file"
+      printf "Database backup saved to: %s\n" "$backup_file"
+    else
+      echo "Error: research-db container is not running." >&2
+      exit 1
+    fi
+    exit 0
+    ;;
+  start|up|"")
+    ;; # proceed with full setup / startup
+  *)
+    echo "Usage: scripts/setup.sh [start|stop|restart|status|logs|backup]" >&2
+    exit 2
+    ;;
+esac
+
 # [Port 53 Resolution] If systemd-resolved is active and stub listener is bound to port 53, disable stub
 if [[ ${EUID:-$(id -u)} -eq 0 ]]; then
   if command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet systemd-resolved 2>/dev/null; then

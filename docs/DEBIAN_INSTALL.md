@@ -31,6 +31,8 @@ Other flags accepted by the bootstrap:
 ```text
 --user USER                    Linux/SSH account (default: re or SUDO_USER)
 --re-password PASS             Password for re user & lab apps (default: securely generated)
+--ssh-key "KEY"                Authorize public SSH key for re user (e.g. "ssh-ed25519 ...")
+--copy-ssh-id                  Copy deploying user's ~/.ssh/authorized_keys to user re
 --install-dir /opt/RELab       Default Git working tree and deployment folder
 --grant-docker-access          Add account & re user to Docker group (opt-in)
 --skip-docker-install          Require Docker Engine/Compose already installed
@@ -97,3 +99,18 @@ sudo docker compose down
 ## 5. Network and security
 
 Only the designated lab VLAN/SSID should use this DNS or HTTPS interception endpoint; never expose these services to the public internet. Docker-managed firewall rules can bypass simplified host firewalls; enforce segmentation at the physical/virtual gateway. Use SSH tunnels for dashboards and MCP. The system does not bypass vendor TLS trust or impersonate remote services without protocol work.
+
+## 6. Decommission and cleanup
+
+To tear down RELab and restore system defaults (systemd-resolved port 53 stub, code-server unit, sudoers rule):
+
+```bash
+# Preview actions without modifying system
+sudo bash scripts/uninstall-debian.sh
+
+# Apply teardown (preserves captures and database)
+sudo bash scripts/uninstall-debian.sh --apply
+
+# Full teardown including workspace purge
+sudo bash scripts/uninstall-debian.sh --apply --purge-data
+```

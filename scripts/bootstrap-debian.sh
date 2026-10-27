@@ -19,6 +19,8 @@ SKIP_START=false
 SKIP_DOCKER=false
 SKIP_UPDATE=false
 RE_PASSWORD=''
+SSH_KEY=''
+COPY_SSH_ID=false
 
 usage() {
   cat <<'USAGE'
@@ -26,6 +28,8 @@ RELab headless Debian bootstrap (fetches the repository and deploys it)
 Usage: sudo bash relab-bootstrap.sh [--user USER] [options]
   --user USER             Linux/SSH account (default: re or SUDO_USER)
   --re-password PASS      Password for re user & lab apps (default: securely generated)
+  --ssh-key "KEY"         Authorize public SSH key for re user (e.g. "ssh-ed25519 ...")
+  --copy-ssh-id           Copy deploying user's ~/.ssh/authorized_keys to user re
   --install-dir PATH      Git working tree and deployment path (default /opt/RELab)
   --lab-ip PRIVATE_IP     Enable DNS/HTTPS listener on this assigned lab-interface IPv4
   --grant-docker-access   Add account & re user to Docker group (opt-in)
@@ -41,6 +45,8 @@ while (($#)); do
   case "$1" in
     --user) TARGET_USER="${2:?Expected username after --user}"; shift 2 ;;
     --re-password) RE_PASSWORD="${2:?Expected password after --re-password}"; shift 2 ;;
+    --ssh-key) SSH_KEY="${2:?Expected key after --ssh-key}"; shift 2 ;;
+    --copy-ssh-id) COPY_SSH_ID=true; shift ;;
     --install-dir) INSTALL_DIR="${2:?Expected directory after --install-dir}"; shift 2 ;;
     --lab-ip) LAB_IP="${2:?Expected IPv4 after --lab-ip}"; shift 2 ;;
     --grant-docker-access) GRANT_DOCKER=true; shift ;;
@@ -144,6 +150,8 @@ fi
 printf '[RELab 3/3] Installing Docker, SSH, browser IDE, and RELab services\n'
 args=(--user "$TARGET_USER" --install-dir "$INSTALL_DIR")
 [[ -z $RE_PASSWORD ]] || args+=(--re-password "$RE_PASSWORD")
+[[ -z $SSH_KEY ]] || args+=(--ssh-key "$SSH_KEY")
+[[ $COPY_SSH_ID == false ]] || args+=(--copy-ssh-id)
 [[ -z $LAB_IP ]] || args+=(--lab-ip "$LAB_IP")
 [[ $GRANT_DOCKER == false ]] || args+=(--grant-docker-access)
 [[ $SKIP_CODE_SERVER == false ]] || args+=(--skip-code-server)

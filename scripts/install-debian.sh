@@ -13,11 +13,15 @@ SKIP_START=false
 SKIP_DOCKER=false
 SKIP_CODE_SERVER=false
 RE_PASSWORD=''
+SSH_KEY=''
+COPY_SSH_ID=false
 usage() {
   cat <<'EOF'
 Usage: sudo bash scripts/install-debian.sh [--user USER] [options]
   --user USER             Linux/SSH developer account (default: re or SUDO_USER)
   --re-password PASS      Password for re user & lab apps (default: securely generated)
+  --ssh-key "KEY"         Authorize public SSH key for re user (e.g. "ssh-ed25519 ...")
+  --copy-ssh-id           Copy deploying user's ~/.ssh/authorized_keys to user re
   --install-dir PATH      Destination, default /opt/RELab
   --lab-ip IPv4           IPv4 assigned to an isolated lab interface; default 127.0.0.1
   --grant-docker-access   Add developer & re user to docker group (explicit opt-in)
@@ -32,6 +36,8 @@ while (($#)); do
   case "$1" in
     --user) TARGET_USER="${2:?Missing --user}"; shift 2 ;;
     --re-password) RE_PASSWORD="${2:?Missing --re-password}"; shift 2 ;;
+    --ssh-key) SSH_KEY="${2:?Missing --ssh-key}"; shift 2 ;;
+    --copy-ssh-id) COPY_SSH_ID=true; shift ;;
     --install-dir) INSTALL_DIR="${2:?Missing --install-dir}"; shift 2 ;;
     --lab-ip) LAB_IP="${2:?Missing --lab-ip}"; shift 2 ;;
     --grant-docker-access) GRANT_DOCKER=true; shift ;;
@@ -93,6 +99,28 @@ if [[ -z $RE_PASSWORD ]]; then
   RE_PASSWORD=$(python3 -c 'import secrets; print(secrets.token_urlsafe(20))' 2>/dev/null || tr -dc 'A-Za-z0-9' </dev/urandom | head -c 20)
 fi
 echo "re:$RE_PASSWORD" | chpasswd
+
+# [SSH Key Provisioning for re user]
+re_home=$(getent passwd re | cut -d: -f6)
+if [[ -n $re_home && -d $re_home ]]; then
+  mkdir -p "$re_home/.ssh"
+  chmod 700 "$re_home/.ssh"
+  chown re:re "$re_home/.ssh"
+  if [[ -n $SSH_KEY ]]; then
+    printf '%s\n' "$SSH_KEY" >> "$re_home/.ssh/authorized_keys"
+    chmod 600 "$re_home/.ssh/authorized_keys"
+    chown re:re "$re_home/.ssh/authorized_keys"
+    echo 'Configured authorized SSH key for user re.'
+  elif [[ $COPY_SSH_ID == true || ( -n ${SUDO_USER:-} && $SUDO_USER != root && $SUDO_USER != re ) ]]; then
+    deploy_home=$(getent passwd "${SUDO_USER:-$TARGET_USER}" 2>/dev/null | cut -d: -f6 || true)
+    if [[ -n $deploy_home && -f "$deploy_home/.ssh/authorized_keys" ]]; then
+      cp "$deploy_home/.ssh/authorized_keys" "$re_home/.ssh/authorized_keys"
+      chmod 600 "$re_home/.ssh/authorized_keys"
+      chown re:re "$re_home/.ssh/authorized_keys"
+      echo "Copied SSH authorized_keys from ${SUDO_USER:-$TARGET_USER} to user re."
+    fi
+  fi
+fi
 
 [[ -n $TARGET_USER && $TARGET_USER != root ]] || { echo 'Specify --user NON_ROOT_ACCOUNT' >&2; exit 1; }
 id "$TARGET_USER" >/dev/null 2>&1 || { echo "User $TARGET_USER not found" >&2; exit 1; }
