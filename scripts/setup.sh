@@ -105,14 +105,21 @@ if not re.search(r'(?m)^RESEARCH_DB_PASSWORD=.+$', s):
     s = s.replace('RESEARCH_DB_PASSWORD=\n', 'RESEARCH_DB_PASSWORD=' + secrets.token_urlsafe(32) + '\n')
 
 # Keep bind-mounted output directories writable as the invoking host user.
-for key, value in [('LAB_UID', os.environ.get('LAB_UID_OVERRIDE', str(os.getuid()))),
-                   ('LAB_GID', os.environ.get('LAB_GID_OVERRIDE', str(os.getgid())))]:
+target_uid = int(os.environ.get('LAB_UID_OVERRIDE', os.environ.get('SUDO_UID', str(os.getuid()))))
+target_gid = int(os.environ.get('LAB_GID_OVERRIDE', os.environ.get('SUDO_GID', str(os.getgid()))))
+
+for key, value in [('LAB_UID', str(target_uid)), ('LAB_GID', str(target_gid))]:
     s = re.sub(r'(?m)^' + key + r'=.*$', key + '=' + value, s)
 
 tmp = Path('.env.tmp.' + str(os.getpid()))
 tmp.write_text(s)
 tmp.chmod(0o600)
 os.replace(tmp, p)
+if target_uid != 0 and hasattr(os, 'chown'):
+    try:
+        os.chown(p, target_uid, target_gid)
+    except OSError:
+        pass
 PY
 
 # [Port Collision Pre-check]
