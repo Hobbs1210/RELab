@@ -4,4 +4,4 @@ fastapi-mcp==0.4.0
 sqlalchemy>=2.0,<3
 psycopg[binary]>=3.2,<4
 nats-py>=2.9,<3
-pyyaml>=6,<7
+pyyaml>=6.0.3,<7
