@@ -421,6 +421,102 @@ services:
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
 
+  # -------------------------------------------------------------
+  # Extended Lab MCP Services (Profile: extended-mcp)
+  # -------------------------------------------------------------
+  mcp-binwalk:
+    build: ./mcp/binwalk
+    profiles: [extended-mcp, firmware]
+    restart: unless-stopped
+    ports: ["127.0.0.1:8307:8000/tcp"]
+    volumes:
+      - ./firmware:/firmware:ro
+      - ./data/firmware-extracted:/extracted
+    networks: [lab]
+    security_opt: [no-new-privileges:true]
+
+  mcp-radare:
+    build: ./mcp/radare
+    profiles: [extended-mcp, firmware]
+    restart: unless-stopped
+    ports: ["127.0.0.1:8308:8000/tcp"]
+    volumes:
+      - ./firmware:/firmware:ro
+    networks: [lab]
+    security_opt: [no-new-privileges:true]
+
+  mcp-yara:
+    build: ./mcp/yara
+    profiles: [extended-mcp, firmware]
+    restart: unless-stopped
+    ports: ["127.0.0.1:8309:8000/tcp"]
+    volumes:
+      - ./firmware:/firmware:ro
+      - ./data/firmware-extracted:/extracted:ro
+      - ./data/analysis:/analysis:ro
+    networks: [lab]
+    security_opt: [no-new-privileges:true]
+
+  mcp-zeek:
+    build: ./mcp/zeek
+    profiles: [extended-mcp, analysis]
+    restart: unless-stopped
+    ports: ["127.0.0.1:8311:8000/tcp"]
+    volumes:
+      - ./data/pcaps:/captures:ro
+      - ./data/zeek:/data/zeek
+    networks: [lab]
+    security_opt: [no-new-privileges:true]
+
+  mcp-nmap:
+    build: ./mcp/nmap
+    profiles: [extended-mcp, tools]
+    restart: unless-stopped
+    environment:
+      TARGET_IP: ${TARGET_IP:-192.0.2.10}
+    ports: ["127.0.0.1:8312:8000/tcp"]
+    networks: [lab]
+    security_opt: [no-new-privileges:true]
+
+  mcp-adb:
+    build: ./mcp/adb
+    profiles: [extended-mcp, mobile]
+    restart: unless-stopped
+    environment:
+      ADB_SERVER_SOCKET: ${ADB_SERVER_SOCKET:-tcp:127.0.0.1:5037}
+    ports: ["127.0.0.1:8313:8000/tcp"]
+    networks: [lab]
+    security_opt: [no-new-privileges:true]
+
+  mcp-filesystem:
+    build: ./mcp/filesystem
+    profiles: [extended-mcp, tools]
+    restart: unless-stopped
+    ports: ["127.0.0.1:8314:8000/tcp"]
+    volumes:
+      - ./firmware:/firmware:ro
+      - ./data/pcaps:/captures:ro
+      - ./data/analysis:/analysis:ro
+      - ./protocols:/protocols:ro
+      - ./data:/data:ro
+    networks: [lab]
+    security_opt: [no-new-privileges:true]
+
+  mcp-database:
+    build: ./mcp/database
+    profiles: [extended-mcp, database]
+    restart: unless-stopped
+    environment:
+      RESEARCH_DATABASE_URL: postgresql+psycopg://research:${RESEARCH_DB_PASSWORD:-research}@research-db:5432/research
+      SQLITE_PATH: /data/requests.db
+    ports: ["127.0.0.1:8315:8000/tcp"]
+    volumes:
+      - ./data/api:/data:ro
+    depends_on:
+      research-db: {condition: service_healthy}
+    networks: [lab]
+    security_opt: [no-new-privileges:true]
+
 networks:
   lab: {}
   docker-api:

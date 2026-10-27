@@ -18,6 +18,14 @@ SERVERS = {
     "Ghidra (optional)": "http://127.0.0.1:8306/mcp",
     "Universal workbench": "http://127.0.0.1:8310/mcp",
     "Research Hub": "http://127.0.0.1:8320/mcp",
+    "Binwalk (optional)": "http://127.0.0.1:8307/mcp",
+    "Radare2 (optional)": "http://127.0.0.1:8308/mcp",
+    "YARA (optional)": "http://127.0.0.1:8309/mcp",
+    "Zeek (optional)": "http://127.0.0.1:8311/mcp",
+    "Nmap (optional)": "http://127.0.0.1:8312/mcp",
+    "ADB (optional)": "http://127.0.0.1:8313/mcp",
+    "Filesystem (optional)": "http://127.0.0.1:8314/mcp",
+    "Database (optional)": "http://127.0.0.1:8315/mcp",
 }
 
 def invoke(url, method, params, session=None):
@@ -47,9 +55,9 @@ def invoke(url, method, params, session=None):
 failures = 0
 results = {}
 for name,url in SERVERS.items():
-    if name.startswith('Ghidra') and '--all' not in sys.argv:
+    if "(optional)" in name and '--all' not in sys.argv:
         results[name]={'status':'not_started_optional'}
-        print('SKIP Ghidra (optional profile; pass --all to include)')
+        print(f'SKIP {name} (optional profile; pass --all to include)')
         continue
     try:
         result, session = invoke(url, "initialize", {
@@ -69,12 +77,14 @@ for name,url in SERVERS.items():
         if not items:
             raise RuntimeError("MCP initialized, but tools/list was empty")
         results[name]={"status":"verified","tool_count":len(items)}
-        print(f"OK {name:14} {len(items):3} tools: {url}")
+        print(f"OK {name:20} {len(items):3} tools: {url}")
     except Exception as ex:
         failures += 1
         results[name]={"status":"failed","reason":type(ex).__name__}
-        print(f"FAIL {name:14} {url} | {type(ex).__name__}: {ex}")
-print(f'Checked {len(SERVERS)-(0 if "--all" in sys.argv else 1)} MCP servers; failed: {failures}')
+        print(f"FAIL {name:20} {url} | {type(ex).__name__}: {ex}")
+opt_count = sum(1 for k in SERVERS if "(optional)" in k)
+checked_count = len(SERVERS) if "--all" in sys.argv else (len(SERVERS) - opt_count)
+print(f'Checked {checked_count} MCP servers; failed: {failures}')
 if '--json-out' in sys.argv:
     idx=sys.argv.index('--json-out')
     if idx+1>=len(sys.argv):sys.exit('--json-out requires an output path')

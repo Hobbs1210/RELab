@@ -17,6 +17,14 @@ SERVERS=(
   "device-workbench|http://127.0.0.1:8310/mcp|Universal protocol workbench"
   "device-research|http://127.0.0.1:8320/mcp|Unified research hub & evidence"
   "device-ghidra|http://127.0.0.1:8306/mcp|Firmware reverse engineering"
+  "device-binwalk|http://127.0.0.1:8307/mcp|Binwalk firmware extraction"
+  "device-radare|http://127.0.0.1:8308/mcp|Radare2 binary analysis"
+  "device-yara|http://127.0.0.1:8309/mcp|YARA secrets scanner"
+  "device-zeek|http://127.0.0.1:8311/mcp|Zeek protocol analyzer"
+  "device-nmap|http://127.0.0.1:8312/mcp|Nmap network discovery"
+  "device-adb|http://127.0.0.1:8313/mcp|ADB companion app inspector"
+  "device-filesystem|http://127.0.0.1:8314/mcp|Lab filesystem explorer"
+  "device-db|http://127.0.0.1:8315/mcp|Database query inspector"
 )
 
 # 1. Generate standard claude_mcp_config.json export
@@ -34,7 +42,15 @@ servers = {
     "device-api": {"type": "http", "url": "http://127.0.0.1:8090/mcp"},
     "device-workbench": {"type": "http", "url": "http://127.0.0.1:8310/mcp"},
     "device-research": {"type": "http", "url": "http://127.0.0.1:8320/mcp"},
-    "device-ghidra": {"type": "http", "url": "http://127.0.0.1:8306/mcp"}
+    "device-ghidra": {"type": "http", "url": "http://127.0.0.1:8306/mcp"},
+    "device-binwalk": {"type": "http", "url": "http://127.0.0.1:8307/mcp"},
+    "device-radare": {"type": "http", "url": "http://127.0.0.1:8308/mcp"},
+    "device-yara": {"type": "http", "url": "http://127.0.0.1:8309/mcp"},
+    "device-zeek": {"type": "http", "url": "http://127.0.0.1:8311/mcp"},
+    "device-nmap": {"type": "http", "url": "http://127.0.0.1:8312/mcp"},
+    "device-adb": {"type": "http", "url": "http://127.0.0.1:8313/mcp"},
+    "device-filesystem": {"type": "http", "url": "http://127.0.0.1:8314/mcp"},
+    "device-db": {"type": "http", "url": "http://127.0.0.1:8315/mcp"}
 }
 
 doc = {"mcpServers": servers}

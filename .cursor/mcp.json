@@ -26,6 +26,30 @@
     },
     "device-research": {
       "url": "http://127.0.0.1:8320/mcp"
+    },
+    "device-binwalk": {
+      "url": "http://127.0.0.1:8307/mcp"
+    },
+    "device-radare": {
+      "url": "http://127.0.0.1:8308/mcp"
+    },
+    "device-yara": {
+      "url": "http://127.0.0.1:8309/mcp"
+    },
+    "device-zeek": {
+      "url": "http://127.0.0.1:8311/mcp"
+    },
+    "device-nmap": {
+      "url": "http://127.0.0.1:8312/mcp"
+    },
+    "device-adb": {
+      "url": "http://127.0.0.1:8313/mcp"
+    },
+    "device-filesystem": {
+      "url": "http://127.0.0.1:8314/mcp"
+    },
+    "device-db": {
+      "url": "http://127.0.0.1:8315/mcp"
     }
   }
 }

@@ -36,12 +36,52 @@ url = "http://127.0.0.1:8306/mcp"
 enabled = true
 startup_timeout_sec = 120
 
-[mcp_servers.device-workbench]
+[mcp_servers."device-workbench"]
 url = "http://127.0.0.1:8310/mcp"
 enabled = true
 
 # Shared evidence, projects, jobs and approved research planning; read-only MCP tools.
 [mcp_servers."device-research"]
 url = "http://127.0.0.1:8320/mcp"
+enabled = true
+startup_timeout_sec = 30
+
+[mcp_servers."device-binwalk"]
+url = "http://127.0.0.1:8307/mcp"
+enabled = true
+startup_timeout_sec = 30
+
+[mcp_servers."device-radare"]
+url = "http://127.0.0.1:8308/mcp"
+enabled = true
+startup_timeout_sec = 30
+
+[mcp_servers."device-yara"]
+url = "http://127.0.0.1:8309/mcp"
+enabled = true
+startup_timeout_sec = 30
+
+[mcp_servers."device-zeek"]
+url = "http://127.0.0.1:8311/mcp"
+enabled = true
+startup_timeout_sec = 30
+
+[mcp_servers."device-nmap"]
+url = "http://127.0.0.1:8312/mcp"
+enabled = true
+startup_timeout_sec = 30
+
+[mcp_servers."device-adb"]
+url = "http://127.0.0.1:8313/mcp"
+enabled = true
+startup_timeout_sec = 30
+
+[mcp_servers."device-filesystem"]
+url = "http://127.0.0.1:8314/mcp"
+enabled = true
+startup_timeout_sec = 30
+
+[mcp_servers."device-db"]
+url = "http://127.0.0.1:8315/mcp"
 enabled = true
 startup_timeout_sec = 30

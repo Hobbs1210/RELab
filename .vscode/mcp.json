@@ -35,6 +35,38 @@
     "device-research": {
       "type": "http",
       "url": "http://127.0.0.1:8320/mcp"
+    },
+    "device-binwalk": {
+      "type": "http",
+      "url": "http://127.0.0.1:8307/mcp"
+    },
+    "device-radare": {
+      "type": "http",
+      "url": "http://127.0.0.1:8308/mcp"
+    },
+    "device-yara": {
+      "type": "http",
+      "url": "http://127.0.0.1:8309/mcp"
+    },
+    "device-zeek": {
+      "type": "http",
+      "url": "http://127.0.0.1:8311/mcp"
+    },
+    "device-nmap": {
+      "type": "http",
+      "url": "http://127.0.0.1:8312/mcp"
+    },
+    "device-adb": {
+      "type": "http",
+      "url": "http://127.0.0.1:8313/mcp"
+    },
+    "device-filesystem": {
+      "type": "http",
+      "url": "http://127.0.0.1:8314/mcp"
+    },
+    "device-db": {
+      "type": "http",
+      "url": "http://127.0.0.1:8315/mcp"
     }
   }
 }
