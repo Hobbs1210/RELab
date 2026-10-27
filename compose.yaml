@@ -195,8 +195,7 @@ services:
       - ./firmware:/firmware
       - ./protocols:/protocols
       - ./data/workbench:/outputs
-      - /sys/class/tty:/sys/class/tty:ro
-      - /sys/bus/usb/devices:/sys/bus/usb/devices:ro
+      - /sys:/sys:ro
     networks: [lab]
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
