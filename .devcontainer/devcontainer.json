@@ -1,0 +1,9 @@
+{
+  "name": "Device RE Lab - Linux host developer",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "runArgs": ["--network=host"],
+  "workspaceFolder": "/workspaces/device-re-lab",
+  "postCreateCommand": "python -m pip install -r requirements-dev.txt",
+  "forwardPorts": [8090, 8081, 8301, 8302, 8303, 8304, 8305, 8306],
+  "customizations": {"vscode":{"extensions":["ms-python.python","ms-python.debugpy","ms-azuretools.vscode-containers","redhat.vscode-yaml"]}}
+}

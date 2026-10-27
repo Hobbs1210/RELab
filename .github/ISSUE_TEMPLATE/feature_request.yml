@@ -1,0 +1,24 @@
+name: Feature request
+description: Suggest a device-independent feature or integration
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Research use case
+      description: What new workflow would this enable?
+    validations:
+      required: true
+  - type: textarea
+    id: design
+    attributes:
+      label: Suggested implementation
+      description: How could the feature integrate with project evidence, jobs, agents, or adapters?
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Research safety
+      options:
+        - label: I will not attach sensitive captures, credentials, proprietary firmware, or device identifiers.
+          required: true

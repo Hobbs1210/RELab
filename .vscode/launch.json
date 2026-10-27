@@ -1,0 +1,47 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Device: FastAPI (local debug)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "main:app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8091",
+        "--reload"
+      ],
+      "cwd": "${workspaceFolder}/api",
+      "env": {
+        "RULES_PATH": "${workspaceFolder}/config/rules.json",
+        "DB_PATH": "${workspaceFolder}/data/api/debug-requests.db",
+        "ADGUARD_URL": "http://127.0.0.1:3000"
+      },
+      "justMyCode": true
+    },
+    {
+      "name": "Research Hub: FastAPI (SQLite dev)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "research_api:app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8321",
+        "--reload"
+      ],
+      "cwd": "${workspaceFolder}/research-hub",
+      "env": {
+        "RESEARCH_DATABASE_URL": "sqlite:///${workspaceFolder}/data/research/debug.sqlite",
+        "RESEARCH_ARTIFACTS": "${workspaceFolder}/data/research",
+        "RESEARCH_INPUTS": "${workspaceFolder}/data"
+      },
+      "justMyCode": true
+    }
+  ]
+}

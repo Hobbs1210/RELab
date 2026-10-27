@@ -1,0 +1,35 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Device RE Lab · Protocol Workbench</title><style>
+:root{color-scheme:dark;font:15px system-ui,sans-serif;background:#0c1626;color:#e8f0fa}body{margin:24px auto;max-width:1320px;padding:0 16px}h1,h2{margin:12px 0}nav a{color:#93d5fc}main{display:grid;grid-template-columns:repeat(auto-fit,minmax(370px,1fr));gap:14px}.panel{padding:16px;background:#162437;border:1px solid #32455a;border-radius:12px}label{display:block;margin:10px 0}input,select,textarea{background:#0b1423;border:1px solid #52657a;color:white;padding:10px;border-radius:7px;max-width:95%;width:95%}button{background:#29679c;border:0;color:#fff;border-radius:8px;padding:9px 13px;cursor:pointer;margin:5px 5px 5px 0}button:hover{background:#367eb9}pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:350px;overflow:auto;color:#cce1eb}.muted{color:#a7b7ca}small{color:#a7b7ca}
+</style></head><body><h1>Universal protocol workbench</h1><p class="muted">Passive by default · Observations are evidence, inferred fields and SDKs are unverified hypotheses. <a href="http://127.0.0.1:8090">Emulator dashboard</a></p>
+<main>
+<section class="panel"><h2>Unified timeline</h2><label>Source IP / DNS name (optional)<input id="src" placeholder="192.0.2.10"></label><button onclick="loadTimeline()">Correlate events</button><pre id="timeline">—</pre></section>
+<section class="panel"><h2>Binary protocol decoder</h2><label>Adapter<select id="protocol"></select></label><label>Packet bytes, hexadecimal<textarea id="hex" rows="4" placeholder="000548656c6c6f"></textarea></label><button onclick="decode()">Decode framing</button><pre id="decoded">—</pre></section>
+<section class="panel"><h2>Automatic inference</h2><small>Select request IDs from the emulator journal, comma-separated.</small><label>Event IDs<input id="ids" placeholder="1,2,3"></label><button onclick="inferSamples()">Find candidate fields</button><pre id="inference">—</pre></section>
+<section class="panel"><h2>Download public firmware (approved URL)</h2><p class="muted">HTTPS only · maximum 100 MiB · public internet destinations only · requires operator token. Verify vendor authenticity separately.</p>
+<label>Firmware HTTPS URL<input id="downloadurl" placeholder="https://vendor.example/firmware-v1.bin"></label><label>Save filename (optional)<input id="downloadname" placeholder="firmware-v1.bin"></label><label>Expected SHA-256 (recommended)<input id="downloadsha" placeholder="64-character hex digest"></label><label>Lab write token<input type="password" autocomplete="off" id="downloadtoken" placeholder="LAB_ADMIN_TOKEN from private .env"></label><button onclick="downloadFirmware()">Download firmware</button><pre id="downloadresults">—</pre></section>
+<section class="panel"><h2>Firmware analysis</h2><button onclick="loadFirmware()">List firmware</button><pre id="files">—</pre><label>Firmware basename<input id="fwname" placeholder="firmware.bin"></label><button onclick="arch()">Detect architecture</button><label>Compare with firmware version<input id="fwother" placeholder="firmware-v2.bin"></label><button onclick="compare()">Compare</button><pre id="fwresults">—</pre></section>
+<section class="panel"><h2>Candidate API contract and SDK</h2><button onclick="contract()">View OpenAPI candidate</button><button onclick="sdk('python')">Python SDK</button><button onclick="sdk('typescript')">TypeScript SDK</button><button onclick="sdk('csharp')">C# SDK</button><pre id="contracts">—</pre></section>
+<section class="panel"><h2>Hardware inventory</h2><p class="muted">Read-only sysfs/USB/serial adapter discovery; controlled device access is separate.</p><button onclick="hardware()">Enumerate adapters</button><pre id="hardware">—</pre></section>
+</main><script>
+const el=id=>document.getElementById(id);const show=(id,data)=>el(id).textContent=typeof data==='string'?data:JSON.stringify(data,null,2);
+async function get(path,raw=false){let r=await fetch('/v1/'+path);if(!r.ok)throw Error(await r.text());return raw?r.text():r.json()}
+async function run(id,fn){try{show(id,await fn())}catch(err){show(id,String(err))}}
+async function init(){const j=await get('protocols');for(const id of Object.keys(j.adapters)){const o=document.createElement('option');o.value=id;o.textContent=id;el('protocol').append(o)}}
+const qs=x=>encodeURIComponent(x);
+function loadTimeline(){run('timeline',()=>get('timeline?limit=250&src='+qs(el('src').value)))}
+function decode(){run('decoded',()=>get('decode?protocol='+qs(el('protocol').value)+'&hexdata='+qs(el('hex').value.trim())))}
+function inferSamples(){run('inference',()=>get('infer?ids='+qs(el('ids').value)))}
+async function downloadFirmware(){await run('downloadresults',async()=>{
+ const payload={url:el('downloadurl').value.trim()};if(el('downloadname').value.trim())payload.filename=el('downloadname').value.trim();
+ if(el('downloadsha').value.trim())payload.sha256=el('downloadsha').value.trim();
+ const response=await fetch('/v1/firmware/download',{method:'POST',headers:{'Content-Type':'application/json','X-Lab-Token':el('downloadtoken').value},body:JSON.stringify(payload)});
+ if(!response.ok)throw Error(await response.text());const data=await response.json();loadFirmware();return data;
+});}
+function loadFirmware(){run('files',()=>get('firmware'))}
+function arch(){run('fwresults',()=>get('firmware/'+qs(el('fwname').value)+'/architecture'))}
+function compare(){run('fwresults',()=>get('firmware/compare?a='+qs(el('fwname').value)+'&b='+qs(el('fwother').value)))}
+function contract(){run('contracts',()=>get('contracts/openapi'))}
+function sdk(lang){run('contracts',()=>get('contracts/sdk/'+lang,true))}
+function hardware(){run('hardware',()=>get('hardware'))}
+init();loadTimeline();loadFirmware();
+</script><p><a href="http://127.0.0.1:8320">Open integrated Research Hub (port-forward 8320 over SSH)</a></p></body></html>

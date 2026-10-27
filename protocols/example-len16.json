@@ -1,0 +1,1 @@
+{"id":"example-len16","framing":"length-prefix","length_bytes":2,"byteorder":"big","description":"Illustrative length-prefixed byte stream; not a vendor protocol"}

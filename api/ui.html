@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Device RE Lab</title>
+<style>
+:root{color-scheme:dark;font-family:ui-sans-serif,system-ui,sans-serif;background:#0b1423;color:#e7ebf5}
+body{max-width:1200px;margin:0 auto;padding:30px 20px}h1{margin:0;font-size:30px}
+small,p{color:#a4aec3}.panels{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+section{border:1px solid #283951;background:#111d30;border-radius:12px;padding:18px;min-width:0}
+textarea{width:100%;min-height:270px;box-sizing:border-box;padding:12px;background:#080f1b;color:#e2ebff;
+  border:1px solid #374761;border-radius:8px;font:13px ui-monospace,monospace;resize:vertical}
+button{border:1px solid #4774bb;background:#254d86;color:white;border-radius:7px;padding:9px 13px;cursor:pointer;margin:8px 8px 0 0}
+button:hover{background:#3264a7}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#080f1b;padding:12px;border-radius:8px;max-height:400px;overflow:auto}
+.event{border-bottom:1px solid #243449;padding:10px 0;cursor:pointer}.event:hover{background:#1b2940}
+.meta{font-family:ui-monospace,monospace;font-size:12px;color:#c9d6ec}.badge{color:#93f0d2}
+#status{color:#a1e9c9}a{color:#97c4ff}@media(max-width:800px){.panels{grid-template-columns:1fr}}
+</style></head><body>
+<h1>🛠 Device RE Lab</h1><p>Reversible DNS experiments · Request journal · Stateful API scenarios · Experiment history. Vendor protocols are not implemented automatically; use profiles and observed evidence.</p>
+<div id="status">Loading...</div><p id="profile">Active device profile: loading...</p>
+<div class="panels">
+<section><h2>DNS rewrites</h2><small>Start empty and observe traffic; redirect only on your isolated lab network. Changes apply immediately through AdGuard Home.</small>
+<textarea id="dns" spellcheck="false"></textarea><button onclick="saveDns()">Save lab-managed DNS hosts</button><button onclick="document.getElementById('dns').value='# Lab-managed DNS rewrites disabled\n';saveDns()">Disable rewrites</button></section>
+<section><h2>Mock response rules</h2><small>JSON array; first enabled matching rule wins. Regex against full path (with query). Use 501 while discovery is incomplete.</small>
+<textarea id="rules" spellcheck="false"></textarea><button onclick="saveRules()">Save response rules</button></section>
+<section><h2>Stateful protocol scenarios</h2><small>JSON array, ordered per source IP. Create a scenario with a unique id, enabled: true, and steps with method, host, path_regex, status and body.</small><textarea id="scenarios" spellcheck="false"></textarea><button onclick="saveScenarios()">Save scenarios</button><button onclick="resetScenarios()">Reset session state</button></section>
+<section><h2>New experiment</h2><small>Snapshots mock rules, scenarios, and managed DNS. Use experiment ID to finish or roll back through the authenticated CLI. The read-only MCP never mutates experiments.</small><input id="experiment-name" placeholder="Experiment name" style="width:95%;padding:10px;background:#0b1423;color:white;margin:10px 0"><textarea id="experiment-hypothesis" placeholder="Hypothesis" style="min-height:105px"></textarea><button onclick="startExperiment()">Start experiment</button></section>
+<section style="grid-column:1/-1"><h2>Incoming API requests <button onclick="loadEvents()">Refresh</button><button onclick="clearEvents()">Clear journal</button></h2><small>Only HTTP requests completing TLS at your HTTPS edge appear here. Includes headers and up to 64 KiB raw body per request (base64 encoded). Treat captured credentials as sensitive.</small>
+<div id="events"></div><pre id="detail">Select a request to inspect.</pre></section>
+<section style="grid-column:1/-1"><h2>Experiment history <button onclick="loadExperiments()">Refresh</button></h2><small>Snapshots allow approved rollback of lab-managed DNS rewrites and emulator settings.</small><pre id="experiment-list">Loading...</pre></section>
+<section style="grid-column:1/-1"><h2>Capture analysis <button onclick="loadAnalyses()">Refresh</button></h2><small>Only PCAPs processed by the Zeek analyzer appear here.</small><pre id="analysis-list">Loading...</pre></section>
+</div>
+<script>
+const e=id=>document.getElementById(id);const esc=s=>String(s??'');
+let adminToken='';async function api(path, opts={}){if(['POST','PUT','PATCH','DELETE'].includes(opts.method)){if(!adminToken)adminToken=prompt('Enter LAB_ADMIN_TOKEN from .env (not saved in browser storage)')||'';opts.headers={...(opts.headers||{}),'X-Lab-Token':adminToken};}const r=await fetch('/__lab__/'+path, opts);const j=await r.json();if(!r.ok)throw Error(JSON.stringify(j));return j;}
+async function init(){try{const [h,r,sc,p]=await Promise.all([api('dns'),api('rules'),api('scenarios'),api('profile')]);e('profile').textContent='Active profile: '+p.active+' · Available: '+p.available.join(', ')+' · DNS rewrites never enabled automatically';e('dns').value=h.hosts;e('rules').value=JSON.stringify(r.rules,null,2);e('scenarios').value=JSON.stringify(sc.scenarios,null,2);e('status').textContent='● API online';await loadEvents();}catch(err){e('status').textContent=err.message;}}
+async function saveDns(){try{await api('dns',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({hosts:e('dns').value})});e('status').textContent='DNS hosts saved';}catch(err){alert(err.message)}}
+async function saveRules(){try{await api('rules',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(JSON.parse(e('rules').value))});e('status').textContent='Mock rules saved';}catch(err){alert(err.message)}}
+async function loadEvents(){try{const result=await api('events?limit=100');const target=e('events');target.replaceChildren();for(const row of result.events){const div=document.createElement('div');div.className='event';div.textContent=`#${row.id} · ${row.ts} · ${row.source_ip} · ${row.method} ${row.host}${row.path} → ${row.response_status}${row.rule_name?' ['+row.rule_name+']':''}`;div.onclick=()=>{const data={...row};try{data.request_body_utf8=atob(row.body_b64)}catch{}e('detail').textContent=JSON.stringify(data,null,2);};target.append(div);}if(!result.events.length)target.textContent='No requests observed yet.';}catch(err){e('events').textContent=err.message;}}
+async function clearEvents(){if(!confirm('Delete the API request journal?'))return;await api('events',{method:'DELETE'});await loadEvents();}
+async function saveScenarios(){try{await api('scenarios',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(JSON.parse(e('scenarios').value))});e('status').textContent='Scenarios saved';}catch(err){alert(err.message)}}
+async function resetScenarios(){if(!confirm('Reset all scenario sessions?'))return;await api('scenarios/reset',{method:'POST',headers:{'content-type':'application/json'},body:'{}'});e('status').textContent='Scenario state cleared';}
+async function startExperiment(){try{const j=await api('experiments',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:e('experiment-name').value,hypothesis:e('experiment-hypothesis').value})});e('status').textContent='Experiment '+j.id+' started';await loadExperiments();}catch(err){alert(err.message)}}
+async function loadExperiments(){try{const j=await api('experiments');e('experiment-list').textContent=JSON.stringify(j.experiments,null,2);}catch(err){e('experiment-list').textContent=err.message;}}
+async function loadAnalyses(){try{const j=await api('analyses');e('analysis-list').textContent=JSON.stringify(j.analyses,null,2);}catch(err){e('analysis-list').textContent=err.message;}}
+init();loadExperiments();loadAnalyses();setInterval(loadEvents,5000);
+</script></body></html>

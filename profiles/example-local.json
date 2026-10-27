@@ -1,0 +1,19 @@
+{
+  "id": "example-local",
+  "display_name": "Synthetic example device",
+  "description": "Safe lab-only mock configuration with reserved .test DNS name.",
+  "dns_candidates": [
+    "api.device.example.test"
+  ],
+  "protocol_hints": [
+    "HTTP",
+    "HTTPS",
+    "DNS"
+  ],
+  "firmware_keywords": [
+    "example"
+  ],
+  "notes": [
+    "Synthetic sample only."
+  ]
+}

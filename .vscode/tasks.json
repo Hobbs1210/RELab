@@ -1,0 +1,383 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Device: Setup (first run)",
+      "type": "shell",
+      "command": "bash scripts/setup.sh",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "group": "build"
+    },
+    {
+      "label": "Device: Up / Build",
+      "type": "shell",
+      "command": "docker compose up -d --build",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "group": "build"
+    },
+    {
+      "label": "Device: Show status",
+      "type": "shell",
+      "command": "docker compose ps",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Device: Logs",
+      "type": "shell",
+      "command": "docker compose logs --tail=150 -f",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Device: Stop",
+      "type": "shell",
+      "command": "docker compose down",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Device: Smoke test",
+      "type": "shell",
+      "command": "bash scripts/smoke-test.sh",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "group": "test"
+    },
+    {
+      "label": "Device: Check MCP",
+      "type": "shell",
+      "command": "python3 scripts/check-mcp.py",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "group": "test"
+    },
+    {
+      "label": "Device: Validate workspace",
+      "type": "shell",
+      "command": "python3 scripts/validate-project.py",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "group": "test"
+    },
+    {
+      "label": "Device: Start capture",
+      "type": "shell",
+      "command": "docker compose --profile capture up -d capture",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Device: Stop capture",
+      "type": "shell",
+      "command": "docker compose --profile capture stop capture",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Device: DNS disable",
+      "type": "shell",
+      "command": "bash scripts/disable-rewrites.sh",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Device: Run offline tests",
+      "type": "shell",
+      "command": "python3 -m pytest -q tests/",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Device: Analyze completed PCAPs",
+      "type": "shell",
+      "command": "bash scripts/analyze-now.sh",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Device: Start Ghidra MCP (heavy)",
+      "type": "shell",
+      "command": "docker compose --profile ghidra up -d --build ghidra",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Device: Check all MCP incl Ghidra",
+      "type": "shell",
+      "command": "python3 scripts/check-mcp.py --all",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Device: Start experiment (CLI help)",
+      "type": "shell",
+      "command": "python3 scripts/labctl.py start --help",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Device: Generate research report",
+      "type": "shell",
+      "command": "python3 scripts/generate-findings.py",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Device: Show experiment history",
+      "type": "shell",
+      "command": "python3 scripts/labctl.py list",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Device: Protocol workbench health",
+      "type": "shell",
+      "command": "curl -fsS http://127.0.0.1:8310/v1/health",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Device: Test bounded local boofuzz",
+      "type": "shell",
+      "command": "docker compose --profile fuzz run --rm fuzz",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Device: Build Binwalk v3 (heavy)",
+      "type": "shell",
+      "command": "docker compose --profile firmware build binwalk",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Device: Inspect protocol adapters",
+      "type": "shell",
+      "command": "curl -fsS http://127.0.0.1:8310/v1/protocols",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Device: Review unified timeline",
+      "type": "shell",
+      "command": "curl -fsS http://127.0.0.1:8310/v1/timeline?limit=50",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Device: Run research unit tests",
+      "type": "shell",
+      "command": "python3 -m pytest -q tests/",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Device: Download firmware (prompt for HTTPS URL)",
+      "type": "shell",
+      "command": "python3 scripts/download-firmware.py \"${input:firmwareUrl}\"",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Device: Debian installer help",
+      "type": "shell",
+      "command": "bash scripts/install-debian.sh --help",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Research: Open hub / diagnostics",
+      "type": "shell",
+      "command": "python3 scripts/researchctl.py list projects && python3 scripts/researchctl.py list jobs",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Research: Run protocol recipe",
+      "type": "shell",
+      "command": "python3 scripts/researchctl.py recipe protocol-research",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Research: MCP verification & save report",
+      "type": "shell",
+      "command": "python3 scripts/check-mcp.py --json-out data/research/mcp-health.json",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Research: Show persistent worker",
+      "type": "shell",
+      "command": "docker compose logs -f --tail=100 research-worker research-hub",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Research: Tests",
+      "type": "shell",
+      "command": "python3 -m pytest -q tests/test_research_hub.py",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "firmwareUrl",
+      "type": "promptString",
+      "description": "Direct public HTTPS firmware URL (avoid sharing signed URLs in logs)"
+    }
+  ]
+}

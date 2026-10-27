@@ -1,0 +1,17 @@
+[
+  {
+    "name": "synthetic-device-test",
+    "enabled": true,
+    "method": "GET",
+    "host": "*",
+    "path_regex": "^/__mock_test__$",
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": {
+      "message": "Generic mock engine is running",
+      "note": "No vendor protocol is implemented"
+    }
+  }
+]

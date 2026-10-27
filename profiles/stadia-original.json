@@ -1,0 +1,28 @@
+{
+  "id": "stadia-original",
+  "display_name": "Google Stadia Controller (original Wi-Fi firmware)",
+  "description": "Optional legacy Stadia controller research profile; candidate domains require confirmation in live captures.",
+  "dns_candidates": [
+    "cloudcast-pa.googleapis.com",
+    "cloudcast-gmsg-prod.googleapis.com"
+  ],
+  "protocol_hints": [
+    "BLE",
+    "HTTPS",
+    "TLS",
+    "STUN",
+    "DTLS",
+    "WebRTC",
+    "Cast"
+  ],
+  "firmware_keywords": [
+    "cloudcast",
+    "gotham",
+    "google",
+    "/gmsg"
+  ],
+  "notes": [
+    "Never enable these DNS rewrites unless the lab operator explicitly selects this profile.",
+    "TLS interception and backend functionality are not guaranteed."
+  ]
+}

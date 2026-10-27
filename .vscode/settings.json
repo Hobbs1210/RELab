@@ -1,0 +1,10 @@
+{
+  "files.exclude": {"**/__pycache__": true, "**/*.pyc": true},
+  "search.exclude": {"data/**": true, "certs/**": true, "config/adguard/**": true},
+  "python.analysis.typeCheckingMode": "basic",
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": ["tests"],
+  "terminal.integrated.cwd": "${workspaceFolder}",
+  "chat.useAgentSkills": true,
+  "yaml.schemas": {"https://json.schemastore.org/compose-spec.json": "compose.yaml"}
+}

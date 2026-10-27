@@ -1,0 +1,31 @@
+{
+  "mcpServers": {
+    "device-dns": {
+      "url": "http://127.0.0.1:8301/"
+    },
+    "device-mitm": {
+      "url": "http://127.0.0.1:8302/mcp"
+    },
+    "device-pcap": {
+      "url": "http://127.0.0.1:8303/mcp"
+    },
+    "device-ble": {
+      "url": "http://127.0.0.1:8304/mcp"
+    },
+    "device-docker": {
+      "url": "http://127.0.0.1:8305/mcp"
+    },
+    "device-api": {
+      "url": "http://127.0.0.1:8090/mcp"
+    },
+    "device-ghidra": {
+      "url": "http://127.0.0.1:8306/mcp"
+    },
+    "device-workbench": {
+      "url": "http://127.0.0.1:8310/mcp"
+    },
+    "device-research": {
+      "url": "http://127.0.0.1:8320/mcp"
+    }
+  }
+}

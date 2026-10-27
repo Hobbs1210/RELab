@@ -1,0 +1,19 @@
+{
+  "id": "generic",
+  "display_name": "Unspecified device (no DNS rewrites)",
+  "description": "Default profile for any authorized IoT/device research. Observe first.",
+  "dns_candidates": [],
+  "protocol_hints": [
+    "DNS",
+    "TLS",
+    "HTTP",
+    "TCP",
+    "UDP",
+    "mDNS",
+    "BLE"
+  ],
+  "firmware_keywords": [],
+  "notes": [
+    "No vendor domains are redirected automatically."
+  ]
+}

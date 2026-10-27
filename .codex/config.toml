@@ -1,0 +1,47 @@
+# Project-scoped MCP for trusted Codex workspaces. MCP servers run on this machine, not in a cloud sandbox.
+
+[mcp_servers."device-dns"]
+url = "http://127.0.0.1:8301/"
+enabled = true
+startup_timeout_sec = 25
+
+[mcp_servers."device-mitm"]
+url = "http://127.0.0.1:8302/mcp"
+enabled = true
+startup_timeout_sec = 25
+
+[mcp_servers."device-pcap"]
+url = "http://127.0.0.1:8303/mcp"
+enabled = true
+startup_timeout_sec = 25
+
+[mcp_servers."device-ble"]
+url = "http://127.0.0.1:8304/mcp"
+enabled = true
+startup_timeout_sec = 25
+
+[mcp_servers."device-docker"]
+url = "http://127.0.0.1:8305/mcp"
+enabled = true
+startup_timeout_sec = 25
+
+[mcp_servers."device-api"]
+url = "http://127.0.0.1:8090/mcp"
+enabled = true
+startup_timeout_sec = 25
+
+# Optional heavy Ghidra profile. Start: docker compose --profile ghidra up -d --build ghidra
+[mcp_servers."device-ghidra"]
+url = "http://127.0.0.1:8306/mcp"
+enabled = true
+startup_timeout_sec = 120
+
+[mcp_servers.device-workbench]
+url = "http://127.0.0.1:8310/mcp"
+enabled = true
+
+# Shared evidence, projects, jobs and approved research planning; read-only MCP tools.
+[mcp_servers."device-research"]
+url = "http://127.0.0.1:8320/mcp"
+enabled = true
+startup_timeout_sec = 30
