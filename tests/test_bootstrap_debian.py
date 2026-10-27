@@ -204,3 +204,13 @@ def test_correlate_traffic_anomalies_detection():
     assert 'DIRECT_IP_CONNECTION' in types
     assert 'ENCRYPTED_DNS_BYPASS' in types
 
+
+def test_react_dashboard_bundle():
+    ui_path = ROOT / 'api/ui.html'
+    assert ui_path.is_file()
+    content = ui_path.read_text(encoding='utf-8')
+    assert 'RELab' in content
+    assert 'root' in content
+    assert len(content) > 50000  # Built single-file React bundle
+
+

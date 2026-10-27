@@ -395,6 +395,35 @@ def dry_run_replay(event_id:int)->dict:
     return {'event_id':event_id,'current_matching_rule':r.get('name') if r else None,
             'status':int(r.get('status',200)) if r else 501,'dry_run':True}
 
+@app.get('/__lab__/ca/download/{fmt}', operation_id='device_ca_download')
+def ca_download(fmt: str) -> Response:
+    """Download lab root CA in PEM, DER or Android hashed format for device trust installation."""
+    candidates = [
+        Path('/certs/export/device-mitm-ca.crt'),
+        Path('/certs/export/device-mitm-ca.der'),
+        Path('/certs/server.crt'),
+        Path(__file__).resolve().parents[1] / 'certs/export/device-mitm-ca.crt',
+        Path(__file__).resolve().parents[1] / 'certs/server.crt',
+    ]
+    cert_path = next((c for c in candidates if c.is_file() and c.stat().st_size > 0), None)
+    if cert_path is None:
+        content = b'-----BEGIN CERTIFICATE-----\nRELab Root CA will be available once Docker starts.\n-----END CERTIFICATE-----\n'
+        return Response(content=content, media_type='application/x-x509-ca-cert',
+                        headers={'Content-Disposition': f'attachment; filename=relab-ca.{fmt}'})
+    content = cert_path.read_bytes()
+    filename = f'relab-ca.{fmt}'
+    if fmt == 'android':
+        android_dir = cert_path.parent / 'android'
+        if android_dir.is_dir():
+            hashes = list(android_dir.glob('*.0'))
+            if hashes:
+                return Response(content=hashes[0].read_bytes(), media_type='application/x-x509-ca-cert',
+                                headers={'Content-Disposition': f'attachment; filename={hashes[0].name}'})
+        filename = 'relab-ca.0'
+    return Response(content=content, media_type='application/x-x509-ca-cert',
+                    headers={'Content-Disposition': f'attachment; filename={filename}'})
+
+
 
 # The MCP handler must be registered BEFORE the catch-all simulator, otherwise
 # FastAPI's first-match routing would turn /mcp into an HTTP 501 mock endpoint.
