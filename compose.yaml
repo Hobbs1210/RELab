@@ -64,15 +64,16 @@ services:
   cert-init:
     image: alpine/openssl:3.5.9
     entrypoint: ["/bin/sh", "-ec"]
-    command: >-
-      if [ ! -s /certs/server.crt ] || [ ! -s /certs/server.key ]; then
-        openssl req -x509 -nodes -newkey rsa:2048 -days 365
-        -keyout /certs/server.key -out /certs/server.crt
-        -subj '/CN=device-lab.local'
-        -addext 'subjectAltName=DNS:device-lab.local';
-      fi;
-      chmod 600 /certs/server.key;
-      echo 'Lab test certificate ready, NOT a Google-trusted certificate.'
+    command:
+      - |
+        if [ ! -s /certs/server.crt ] || [ ! -s /certs/server.key ]; then
+          openssl req -x509 -nodes -newkey rsa:2048 -days 365 \
+            -keyout /certs/server.key -out /certs/server.crt \
+            -subj '/CN=device-lab.local' \
+            -addext 'subjectAltName=DNS:device-lab.local'
+        fi
+        chmod 600 /certs/server.key 2>/dev/null || true
+        echo 'Lab test certificate ready, NOT a Google-trusted certificate.'
     volumes: ["./certs:/certs"]
     restart: "no"
     networks: [lab]
