@@ -72,7 +72,15 @@ import os, shutil, secrets, re
 p = Path('.env')
 bak = Path('.env.bak')
 if p.exists():
-    shutil.copy2(p, bak)
+    try:
+        if bak.exists():
+            bak.unlink(missing_ok=True)
+        shutil.copy2(p, bak)
+    except Exception:
+        try:
+            bak.write_text(p.read_text())
+        except Exception:
+            pass  # proceed even if backup file cannot be overwritten
     s = p.read_text()
 else:
     s = Path('.env.example').read_text()
@@ -120,6 +128,11 @@ if target_uid != 0 and hasattr(os, 'chown'):
         os.chown(p, target_uid, target_gid)
     except OSError:
         pass
+    if bak.exists():
+        try:
+            os.chown(bak, target_uid, target_gid)
+        except OSError:
+            pass
 PY
 
 # [Port Collision Pre-check]
