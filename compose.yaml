@@ -213,7 +213,7 @@ services:
     environment:
       POSTGRES_USER: research
       POSTGRES_DB: research
-      POSTGRES_PASSWORD: ${RESEARCH_DB_PASSWORD:?Run scripts/setup.sh to generate RESEARCH_DB_PASSWORD}
+      POSTGRES_PASSWORD: ${RESEARCH_DB_PASSWORD:-research}
     volumes: [research-postgres:/var/lib/postgresql/data]
     networks: [lab]
     healthcheck:
@@ -237,11 +237,11 @@ services:
       research-db: {condition: service_healthy}
       research-events: {condition: service_started}
     environment: &research-environment
-      RESEARCH_DATABASE_URL: postgresql+psycopg://research:${RESEARCH_DB_PASSWORD:?Missing database password}@research-db:5432/research
+      RESEARCH_DATABASE_URL: postgresql+psycopg://research:${RESEARCH_DB_PASSWORD:-research}@research-db:5432/research
       NATS_URL: nats://research-events:4222
       RESEARCH_ARTIFACTS: /research
       RESEARCH_INPUTS: /inputs
-      LAB_ADMIN_TOKEN: ${LAB_ADMIN_TOKEN:?Run scripts/setup.sh to generate LAB_ADMIN_TOKEN}
+      LAB_ADMIN_TOKEN: ${LAB_ADMIN_TOKEN:-}
     volumes: &research-volumes
       - ./data/research:/research
       - ./firmware:/inputs/firmware:ro

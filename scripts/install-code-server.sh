@@ -7,13 +7,15 @@ TARGET_USER=''
 WORKSPACE='/opt/RELab'
 PORT=8443
 PASSWORD=''
-usage() { echo 'Usage: sudo bash scripts/install-code-server.sh --user USER [--workspace /opt/RELab] [--port 8443] [--password PASS]'; }
+BIND_HOST="${BIND_HOST:-0.0.0.0}"
+usage() { echo 'Usage: sudo bash scripts/install-code-server.sh --user USER [--workspace /opt/RELab] [--port 8443] [--password PASS] [--bind-host 0.0.0.0]'; }
 while (($#)); do
   case "$1" in
     --user) TARGET_USER="${2:?}"; shift 2 ;;
     --workspace) WORKSPACE="${2:?}"; shift 2 ;;
     --port) PORT="${2:?}"; shift 2 ;;
     --password) PASSWORD="${2:?}"; shift 2 ;;
+    --bind-host) BIND_HOST="${2:?}"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown argument: $1" >&2; exit 2 ;;
   esac
@@ -52,7 +54,7 @@ else
   pass=$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')
 fi
 cat > "$config_file" <<CONF
-bind-addr: 127.0.0.1:$PORT
+bind-addr: $BIND_HOST:$PORT
 auth: password
 password: $pass
 cert: false
@@ -72,7 +74,7 @@ Type=simple
 User=$TARGET_USER
 WorkingDirectory=$WORKSPACE
 Environment=HOME=$HOME_DIR
-ExecStart=$binary --config $config_file --bind-addr 127.0.0.1:$PORT --auth password $WORKSPACE
+ExecStart=$binary --config $config_file --bind-addr $BIND_HOST:$PORT --auth password $WORKSPACE
 Restart=on-failure
 RestartSec=5
 UMask=0077
