@@ -94,3 +94,11 @@ def test_documentation_contains_curl_bootstrap():
     assert 'raw.githubusercontent.com/Hobbs1210/RELab/main/scripts/bootstrap-debian.sh' in body
     assert 'sudo bash /tmp/relab-bootstrap.sh --user "$USER"' in body
     assert '/opt/RELab' in body
+
+
+def test_adguard_setup_redirect_handling():
+    setup_body = (ROOT / 'scripts/setup.sh').read_text(encoding='utf-8')
+    assert 'NoRedirect' in setup_body
+    assert 'HTTPRedirectHandler' in setup_body
+    assert 'e.code not in (404, 400, 302)' in setup_body
+

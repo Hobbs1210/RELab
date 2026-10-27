@@ -104,12 +104,29 @@ for line in Path('.env').read_text().splitlines():
 base='http://127.0.0.1:3000'
 header='Basic '+base64.b64encode((settings['ADGUARD_USERNAME']+':'+settings['ADGUARD_PASSWORD']).encode()).decode()
 
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+opener = urllib.request.build_opener(NoRedirect)
+
 def fetch(path, payload=None, auth=False):
     headers={'Content-Type':'application/json'}
     if auth:headers['Authorization']=header
     data=json.dumps(payload).encode() if payload is not None else None
-    with urllib.request.urlopen(urllib.request.Request(base+path,data=data,headers=headers),timeout=5) as r:
-        body=r.read();return json.loads(body) if body else {}
+    req=urllib.request.Request(base+path,data=data,headers=headers)
+    try:
+        with opener.open(req,timeout=5) as r:
+            body=r.read()
+            try:
+                return json.loads(body) if body else {}
+            except Exception:
+                return {}
+    except urllib.error.HTTPError as e:
+        if path == '/control/install/configure' and e.code in (200, 302):
+            return {}
+        raise
+
 for i in range(40):
     try:
         try:
@@ -117,9 +134,10 @@ for i in range(40):
             print('AdGuard already configured; verified admin credentials.')
             break
         except urllib.error.HTTPError as e:
-            if e.code == 401:
+            loc = e.headers.get('Location', '') if hasattr(e, 'headers') and e.headers else ''
+            if e.code == 401 or (e.code == 302 and 'login' in loc):
                 raise SystemExit('AdGuard already configured with DIFFERENT credentials. Restore the original .env or reset AdGuard manually.')
-            if e.code not in (404, 400):
+            if e.code not in (404, 400, 302):
                 raise
         fetch('/control/install/get_addresses')
         payload={'web':{'ip':'0.0.0.0','port':3000},'dns':{'ip':'0.0.0.0','port':53},'username':settings['ADGUARD_USERNAME'],'password':settings['ADGUARD_PASSWORD']}
