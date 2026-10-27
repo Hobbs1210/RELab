@@ -3,9 +3,11 @@ import { McpServerInfo } from '../types';
 
 interface McpGridProps {
   servers: McpServerInfo[];
+  hostIp?: string;
+  onShowToast?: (msg: string) => void;
 }
 
-export const McpGrid: React.FC<McpGridProps> = ({ servers }) => {
+export const McpGrid: React.FC<McpGridProps> = ({ servers, hostIp, onShowToast }) => {
   const [selectedMcp, setSelectedMcp] = useState<McpServerInfo | null>(null);
 
   return (
@@ -14,10 +16,11 @@ export const McpGrid: React.FC<McpGridProps> = ({ servers }) => {
         <div>
           <div className="card-title">
             <span>🔌 MCP Server Ecosystem</span>
+            {hostIp && <span className="badge badge-blue">Host: {hostIp}</span>}
             <span className="badge badge-safe">{servers.filter(s => s.status === 'online').length} / {servers.length} Online</span>
           </div>
           <div className="card-desc">
-            Nine loopback-only Model Context Protocol endpoints providing LLM tools to Antigravity, Claude Code, Codex, and VS Code.
+            Model Context Protocol endpoints providing LLM tools to Antigravity, Claude Code, Codex, and VS Code.
           </div>
         </div>
       </div>
@@ -36,6 +39,9 @@ export const McpGrid: React.FC<McpGridProps> = ({ servers }) => {
             </div>
             <div style={{ fontSize: '11px', color: 'var(--text-sub)' }}>
               Port: <span className="font-mono" style={{ color: 'var(--accent-cyan)' }}>{server.port}</span>
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--accent-blue)', wordBreak: 'break-all' }} className="font-mono">
+              {server.url}
             </div>
             <div style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: '1.4' }}>
               {server.description}
@@ -59,7 +65,20 @@ export const McpGrid: React.FC<McpGridProps> = ({ servers }) => {
             </div>
             <p style={{ fontSize: '12px', color: 'var(--text-sub)' }}>{selectedMcp.description}</p>
             <div>
-              <div style={{ fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Loopback Endpoint:</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 600 }}>Endpoint URL:</span>
+                {onShowToast && (
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(selectedMcp.url);
+                      onShowToast(`Copied ${selectedMcp.name} URL to clipboard`);
+                    }}
+                  >
+                    Copy URL
+                  </button>
+                )}
+              </div>
               <pre className="code-view" style={{ padding: '8px' }}>{selectedMcp.url}</pre>
             </div>
             <div>

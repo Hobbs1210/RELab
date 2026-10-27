@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getBrowserHost } from '../utils/host';
 
 interface IdeHelperModalProps {
   onClose: () => void;
@@ -7,28 +8,31 @@ interface IdeHelperModalProps {
 
 export const IdeHelperModal: React.FC<IdeHelperModalProps> = ({ onClose, onShowToast }) => {
   const [activeTab, setActiveTab] = useState<'antigravity' | 'claude' | 'codex' | 'vscode'>('antigravity');
+  const { rawHost, host } = getBrowserHost();
 
   const copy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    onShowToast(`Copied ${label} snippet to clipboard`);
+    onShowToast(`Copied ${label} to clipboard`);
   };
 
   const sshCmd = `ssh -N -L 8090:127.0.0.1:8090 -L 8301:127.0.0.1:8301 \\
   -L 8302:127.0.0.1:8302 -L 8303:127.0.0.1:8303 \\
   -L 8304:127.0.0.1:8304 -L 8305:127.0.0.1:8305 \\
-  -L 8310:127.0.0.1:8310 -L 8320:127.0.0.1:8320 re@DEBIAN_IP`;
+  -L 8310:127.0.0.1:8310 -L 8320:127.0.0.1:8320 re@${rawHost}`;
+
+  const vscodeCmd = `code --remote ssh-remote+re@${rawHost} /opt/RELab`;
 
   const antigravitySnippet = `{
   "mcpServers": {
-    "device-dns": { "serverUrl": "http://127.0.0.1:8301/" },
-    "device-mitm": { "serverUrl": "http://127.0.0.1:8302/mcp" },
-    "device-pcap": { "serverUrl": "http://127.0.0.1:8303/mcp" },
-    "device-ble": { "serverUrl": "http://127.0.0.1:8304/mcp" },
-    "device-docker": { "serverUrl": "http://127.0.0.1:8305/mcp" },
-    "device-api": { "serverUrl": "http://127.0.0.1:8090/mcp" },
-    "device-workbench": { "serverUrl": "http://127.0.0.1:8310/mcp" },
-    "device-research": { "serverUrl": "http://127.0.0.1:8320/mcp" },
-    "device-ghidra": { "serverUrl": "http://127.0.0.1:8306/mcp" }
+    "device-dns": { "serverUrl": "http://${host}:8301/" },
+    "device-mitm": { "serverUrl": "http://${host}:8302/mcp" },
+    "device-pcap": { "serverUrl": "http://${host}:8303/mcp" },
+    "device-ble": { "serverUrl": "http://${host}:8304/mcp" },
+    "device-docker": { "serverUrl": "http://${host}:8305/mcp" },
+    "device-api": { "serverUrl": "http://${host}:8090/mcp" },
+    "device-workbench": { "serverUrl": "http://${host}:8310/mcp" },
+    "device-research": { "serverUrl": "http://${host}:8320/mcp" },
+    "device-ghidra": { "serverUrl": "http://${host}:8306/mcp" }
   }
 }`;
 
@@ -44,9 +48,9 @@ export const IdeHelperModal: React.FC<IdeHelperModalProps> = ({ onClose, onShowT
         <div style={{ background: '#050a14', padding: '12px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
             <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--accent-cyan)' }}>
-              🔑 Remote SSH Port-Forwarding (Laptop ➔ Debian Host)
+              🔑 Remote SSH Port-Forwarding (Laptop ➔ Host: {rawHost})
             </span>
-            <button className="btn btn-secondary btn-sm" onClick={() => copy(sshCmd, 'SSH Tunnel')}>Copy SSH</button>
+            <button className="btn btn-secondary btn-sm" onClick={() => copy(sshCmd, 'SSH Tunnel command')}>Copy SSH</button>
           </div>
           <pre className="code-view" style={{ fontSize: '11px', padding: '8px' }}>{sshCmd}</pre>
         </div>
@@ -71,34 +75,46 @@ export const IdeHelperModal: React.FC<IdeHelperModalProps> = ({ onClose, onShowT
         <div>
           {activeTab === 'antigravity' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ fontSize: '12px', color: 'var(--text-sub)' }}>
-                Antigravity natively loads <span className="font-mono">.agents/mcp_config.json</span> in the workspace:
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-sub)' }}>
+                  Antigravity natively loads <span className="font-mono">.agents/mcp_config.json</span> in workspace (Host: <span className="font-mono" style={{ color: 'var(--accent-cyan)' }}>{rawHost}</span>):
+                </span>
+                <button className="btn btn-secondary btn-sm" onClick={() => copy(antigravitySnippet, 'MCP Config')}>Copy Config</button>
               </div>
               <pre className="code-view">{antigravitySnippet}</pre>
             </div>
           )}
           {activeTab === 'claude' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ fontSize: '12px', color: 'var(--text-sub)' }}>
-                Register servers in Claude Desktop or Claude Code CLI using the automated script:
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-sub)' }}>
+                  Register servers in Claude Desktop or Claude Code CLI using the automated script:
+                </span>
+                <button className="btn btn-secondary btn-sm" onClick={() => copy('bash scripts/register-claude.sh', 'Claude Script command')}>Copy Command</button>
               </div>
               <pre className="code-view">bash scripts/register-claude.sh</pre>
             </div>
           )}
           {activeTab === 'codex' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ fontSize: '12px', color: 'var(--text-sub)' }}>
-                Register servers with Codex CLI via the preconfigured script:
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-sub)' }}>
+                  Register servers with Codex CLI via the preconfigured script:
+                </span>
+                <button className="btn btn-secondary btn-sm" onClick={() => copy('bash scripts/register-codex.sh', 'Codex Script command')}>Copy Command</button>
               </div>
               <pre className="code-view">bash scripts/register-codex.sh</pre>
             </div>
           )}
           {activeTab === 'vscode' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ fontSize: '12px', color: 'var(--text-sub)' }}>
-                Open <span className="font-mono">/opt/RELab</span> via VS Code Remote-SSH. Server config is preloaded at <span className="font-mono">.vscode/mcp.json</span>.
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-sub)' }}>
+                  Open <span className="font-mono">/opt/RELab</span> via VS Code Remote-SSH (<span className="font-mono" style={{ color: 'var(--accent-cyan)' }}>{rawHost}</span>):
+                </span>
+                <button className="btn btn-secondary btn-sm" onClick={() => copy(vscodeCmd, 'VS Code Remote Command')}>Copy Command</button>
               </div>
-              <pre className="code-view">code --remote ssh-remote+re@DEBIAN_IP /opt/RELab</pre>
+              <pre className="code-view">{vscodeCmd}</pre>
             </div>
           )}
         </div>

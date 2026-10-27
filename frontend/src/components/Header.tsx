@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ProfileInfo } from '../types';
 import { labFetch } from '../api';
+import { getBrowserHost } from '../utils/host';
 
 interface HeaderProps {
   profile: ProfileInfo | null;
@@ -11,8 +12,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ profile, onOpenIdeModal, onRefresh, onShowToast }) => {
   const [killing, setKilling] = useState(false);
-  const rawHost = typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1';
-  const host = rawHost.includes(':') && !rawHost.startsWith('[') ? `[${rawHost}]` : rawHost;
+  const { rawHost, host } = getBrowserHost();
 
   const handleKillswitch = async () => {
     if (!confirm('EMERGENCY KILLSWITCH:\nThis will immediately disable all DNS rewrites, clear stateful sessions, and restore safe defaults. Proceed?')) {

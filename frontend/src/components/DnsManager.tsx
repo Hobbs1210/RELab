@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { labFetch } from '../api';
+import { getBrowserHost } from '../utils/host';
 
 interface DnsManagerProps {
   hostsText: string;
@@ -11,8 +12,7 @@ export const DnsManager: React.FC<DnsManagerProps> = ({ hostsText, onSaveHosts, 
   const [text, setText] = useState(hostsText);
   const [saving, setSaving] = useState(false);
   const [customDomain, setCustomDomain] = useState('');
-  const rawHost = typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1';
-  const host = rawHost.includes(':') && !rawHost.startsWith('[') ? `[${rawHost}]` : rawHost;
+  const { rawHost, host } = getBrowserHost();
   const [targetIp, setTargetIp] = useState(rawHost);
 
   React.useEffect(() => {

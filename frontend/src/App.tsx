@@ -11,6 +11,7 @@ import { ExperimentTimeline } from './components/ExperimentTimeline';
 import { ReportExporter } from './components/ReportExporter';
 import { IdeHelperModal } from './components/IdeHelperModal';
 import { labFetch } from './api';
+import { getBrowserHost } from './utils/host';
 import {
   RequestEvent,
   MockRule,
@@ -21,16 +22,16 @@ import {
 } from './types';
 import './styles.css';
 
-const DEFAULT_MCP_SERVERS: McpServerInfo[] = [
-  { id: 'device-dns', name: 'AdGuard DNS', port: 8301, url: 'http://127.0.0.1:8301/', status: 'online', description: 'AdGuard Home DNS rewrite inspection & testing' },
-  { id: 'device-mitm', name: 'mitmproxy', port: 8302, url: 'http://127.0.0.1:8302/mcp', status: 'online', description: 'HTTP/HTTPS stream inspection and flows' },
-  { id: 'device-pcap', name: 'Wireshark PCAP', port: 8303, url: 'http://127.0.0.1:8303/mcp', status: 'online', description: 'Offline packet forensics & TShark dissection' },
-  { id: 'device-ble', name: 'Bluetooth LE', port: 8304, url: 'http://127.0.0.1:8304/mcp', status: 'online', description: 'BLE adapter discovery & GATT characteristic reading' },
-  { id: 'device-docker', name: 'Docker Proxy', port: 8305, url: 'http://127.0.0.1:8305/mcp', status: 'online', description: 'Docker container status and health inspection' },
-  { id: 'device-api', name: 'Device Mock API', port: 8090, url: 'http://127.0.0.1:8090/mcp', status: 'online', description: 'Mock device HTTP API simulation & rule engine' },
-  { id: 'device-workbench', name: 'Protocol Workbench', port: 8310, url: 'http://127.0.0.1:8310/mcp', status: 'online', description: 'Universal protocol framing heuristics & candidate SDKs' },
-  { id: 'device-research', name: 'Research Hub', port: 8320, url: 'http://127.0.0.1:8320/mcp', status: 'online', description: 'Durable jobs, evidence database, and pipelines' },
-  { id: 'device-ghidra', name: 'Ghidra Decompiler', port: 8306, url: 'http://127.0.0.1:8306/mcp', status: 'optional', description: 'Offline firmware reverse engineering (opt-in profile)' },
+const getMcpServers = (host: string): McpServerInfo[] => [
+  { id: 'device-dns', name: 'AdGuard DNS', port: 8301, url: `http://${host}:8301/`, status: 'online', description: 'AdGuard Home DNS rewrite inspection & testing' },
+  { id: 'device-mitm', name: 'mitmproxy', port: 8302, url: `http://${host}:8302/mcp`, status: 'online', description: 'HTTP/HTTPS stream inspection and flows' },
+  { id: 'device-pcap', name: 'Wireshark PCAP', port: 8303, url: `http://${host}:8303/mcp`, status: 'online', description: 'Offline packet forensics & TShark dissection' },
+  { id: 'device-ble', name: 'Bluetooth LE', port: 8304, url: `http://${host}:8304/mcp`, status: 'online', description: 'BLE adapter discovery & GATT characteristic reading' },
+  { id: 'device-docker', name: 'Docker Proxy', port: 8305, url: `http://${host}:8305/mcp`, status: 'online', description: 'Docker container status and health inspection' },
+  { id: 'device-api', name: 'Device Mock API', port: 8090, url: `http://${host}:8090/mcp`, status: 'online', description: 'Mock device HTTP API simulation & rule engine' },
+  { id: 'device-workbench', name: 'Protocol Workbench', port: 8310, url: `http://${host}:8310/mcp`, status: 'online', description: 'Universal protocol framing heuristics & candidate SDKs' },
+  { id: 'device-research', name: 'Research Hub', port: 8320, url: `http://${host}:8320/mcp`, status: 'online', description: 'Durable jobs, evidence database, and pipelines' },
+  { id: 'device-ghidra', name: 'Ghidra Decompiler', port: 8306, url: `http://${host}:8306/mcp`, status: 'optional', description: 'Offline firmware reverse engineering (opt-in profile)' },
 ];
 
 export const App: React.FC = () => {
@@ -43,6 +44,8 @@ export const App: React.FC = () => {
   const [analyses, setAnalyses] = useState<AnalysisItem[]>([]);
   const [isIdeModalOpen, setIsIdeModalOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const { rawHost, host } = getBrowserHost();
+  const mcpServers = React.useMemo(() => getMcpServers(host), [host]);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -192,7 +195,7 @@ export const App: React.FC = () => {
         )}
 
         {activeTab === 'mcp' && (
-          <McpGrid servers={DEFAULT_MCP_SERVERS} />
+          <McpGrid servers={mcpServers} hostIp={rawHost} onShowToast={showToast} />
         )}
 
         {activeTab === 'rules' && (
