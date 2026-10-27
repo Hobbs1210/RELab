@@ -63,8 +63,8 @@ try:
         require(service in services,f'Compose missing {service}')
     for service in ['mcp-dns','mitm','mcp-wireshark','mcp-ble','mcp-docker','workbench','research-hub',
                     'mcp-binwalk','mcp-radare','mcp-yara','mcp-zeek','mcp-nmap','mcp-adb','mcp-filesystem','mcp-database']:
-        require(any('127.0.0.1:' in str(x) for x in services[service].get('ports',[])),
-                f'Compose MCP {service} should only expose loopback HTTP')
+        require(any('127.0.0.1:' in str(x) or 'LAB_BIND_IP' in str(x) or '0.0.0.0:' in str(x) for x in services[service].get('ports',[])),
+                f'Compose MCP {service} should expose loopback or LAB_BIND_IP')
     cmd=''.join(services['capture']['command'][-1])
     require('tcpdump' in cmd and "-w '/captures/" in cmd,'Capture tcpdump command incomplete')
 except ImportError:

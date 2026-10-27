@@ -11,7 +11,9 @@ export const DnsManager: React.FC<DnsManagerProps> = ({ hostsText, onSaveHosts, 
   const [text, setText] = useState(hostsText);
   const [saving, setSaving] = useState(false);
   const [customDomain, setCustomDomain] = useState('');
-  const [targetIp, setTargetIp] = useState('127.0.0.1');
+  const rawHost = typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1';
+  const host = rawHost.includes(':') && !rawHost.startsWith('[') ? `[${rawHost}]` : rawHost;
+  const [targetIp, setTargetIp] = useState(rawHost);
 
   React.useEffect(() => {
     setText(hostsText);
@@ -60,7 +62,7 @@ export const DnsManager: React.FC<DnsManagerProps> = ({ hostsText, onSaveHosts, 
           <button className="btn btn-danger btn-sm" onClick={handleDisableAll} disabled={saving}>
             🛑 Disable All Rewrites
           </button>
-          <a href="http://127.0.0.1:3000" target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm">
+          <a href={`http://${host}:3000`} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm">
             Open AdGuard Web UI ↗
           </a>
         </div>

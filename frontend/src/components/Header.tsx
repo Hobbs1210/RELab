@@ -11,6 +11,8 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ profile, onOpenIdeModal, onRefresh, onShowToast }) => {
   const [killing, setKilling] = useState(false);
+  const rawHost = typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : '127.0.0.1';
+  const host = rawHost.includes(':') && !rawHost.startsWith('[') ? `[${rawHost}]` : rawHost;
 
   const handleKillswitch = async () => {
     if (!confirm('EMERGENCY KILLSWITCH:\nThis will immediately disable all DNS rewrites, clear stateful sessions, and restore safe defaults. Proceed?')) {
@@ -56,16 +58,16 @@ export const Header: React.FC<HeaderProps> = ({ profile, onOpenIdeModal, onRefre
         </div>
 
         <div className="nav-links">
-          <a href="http://127.0.0.1:3000" target="_blank" rel="noreferrer" className="nav-link" title="AdGuard Home DNS Web Interface">
+          <a href={`http://${host}:3000`} target="_blank" rel="noreferrer" className="nav-link" title="AdGuard Home DNS Web Interface">
             🌐 DNS (3000)
           </a>
-          <a href="http://127.0.0.1:8310" target="_blank" rel="noreferrer" className="nav-link" title="Universal Protocol Workbench">
+          <a href={`http://${host}:8310`} target="_blank" rel="noreferrer" className="nav-link" title="Universal Protocol Workbench">
             🔬 Workbench (8310)
           </a>
-          <a href="http://127.0.0.1:8320" target="_blank" rel="noreferrer" className="nav-link" title="Integrated Research Hub">
+          <a href={`http://${host}:8320`} target="_blank" rel="noreferrer" className="nav-link" title="Integrated Research Hub">
             📊 Research (8320)
           </a>
-          <a href="http://127.0.0.1:8443" target="_blank" rel="noreferrer" className="nav-link" title="Browser VS Code Server">
+          <a href={`http://${host}:8443`} target="_blank" rel="noreferrer" className="nav-link" title="Browser VS Code Server">
             💻 Code IDE (8443)
           </a>
           <a href="/docs" target="_blank" rel="noreferrer" className="nav-link" title="Interactive OpenAPI Swagger">
