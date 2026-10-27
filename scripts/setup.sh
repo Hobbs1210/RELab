@@ -215,7 +215,7 @@ else:
     raise SystemExit('Unable to initialize AdGuard')
 PY
 
-echo '[2/3] Building and starting seven default MCP endpoints, analyzer and API emulator'
+echo '[2/3] Building and starting sixteen default MCP endpoints, analyzer and API emulator'
 docker compose up -d --build
 
 echo '[3/3] Service state'

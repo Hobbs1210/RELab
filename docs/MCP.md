@@ -10,17 +10,17 @@
 | `device-api` | `http://127.0.0.1:8090/mcp` | default | **Read-only** experimental API observations and reports |
 | `device-workbench` | `http://127.0.0.1:8310/mcp` | default | Read-only protocol decode, timeline, hardware inventory, candidate contract / SDK |
 | `device-research` | `http://127.0.0.1:8320/mcp` | default | **Read-only unified projects, evidence, jobs, plans and experiments**; writes use token-protected REST |
+| `device-binwalk` | `http://127.0.0.1:8307/mcp` | default | Binwalk signature scan & recursive firmware extraction |
+| `device-radare` | `http://127.0.0.1:8308/mcp` | default | Radare2/Rizin binary triage, functions, strings, disasm, entropy |
+| `device-yara` | `http://127.0.0.1:8309/mcp` | default | YARA rules & high-entropy secret/key discovery |
+| `device-zeek` | `http://127.0.0.1:8311/mcp` | default | Zeek network security monitoring and structured PCAP log triage |
+| `device-nmap` | `http://127.0.0.1:8312/mcp` | default | Bounded lab network discovery and banner analysis |
+| `device-adb` | `http://127.0.0.1:8313/mcp` | default | ADB companion app logcat, packages and dumpsys |
+| `device-filesystem` | `http://127.0.0.1:8314/mcp` | default | Scoped read-only access to lab files and artifacts |
+| `device-db` | `http://127.0.0.1:8315/mcp` | default | Read-only SQL inspection of SQLite requests & Postgres research DB |
 | `device-ghidra` | `http://127.0.0.1:8306/mcp` | optional `--profile ghidra` | Offline firmware analysis (CPU intensive) |
-| `device-binwalk` | `http://127.0.0.1:8307/mcp` | optional `--profile extended-mcp` | Binwalk signature scan & recursive firmware extraction |
-| `device-radare` | `http://127.0.0.1:8308/mcp` | optional `--profile extended-mcp` | Radare2/Rizin binary triage, functions, strings, disasm, entropy |
-| `device-yara` | `http://127.0.0.1:8309/mcp` | optional `--profile extended-mcp` | YARA rules & high-entropy secret/key discovery |
-| `device-zeek` | `http://127.0.0.1:8311/mcp` | optional `--profile extended-mcp` | Zeek network security monitoring and structured PCAP log triage |
-| `device-nmap` | `http://127.0.0.1:8312/mcp` | optional `--profile extended-mcp` | Bounded lab network discovery and banner analysis |
-| `device-adb` | `http://127.0.0.1:8313/mcp` | optional `--profile extended-mcp` | ADB companion app logcat, packages and dumpsys |
-| `device-filesystem` | `http://127.0.0.1:8314/mcp` | optional `--profile extended-mcp` | Scoped read-only access to lab files and artifacts |
-| `device-db` | `http://127.0.0.1:8315/mcp` | optional `--profile extended-mcp` | Read-only SQL inspection of SQLite requests & Postgres research DB |
 
-**Check live tools:** `python3 scripts/check-mcp.py` for default eight; after starting Ghidra, run with `--all`. This must succeed on the actual host before claiming integrations are operational. Static config checks are not MCP handshakes.
+**Check live tools:** `python3 scripts/check-mcp.py` for all 16 default MCP servers; after starting Ghidra, run with `--all`. This must succeed on the actual host before claiming integrations are operational. Static config checks are not MCP handshakes.
 
 **Agent files:** Antigravity `.agents/mcp_config.json`, Codex `.codex/config.toml`, VS Code/Copilot `.vscode/mcp.json`, Cursor `.cursor/mcp.json`, portable `.mcp.json`. These are workspace-local and use loopback URLs relative to the agent process. Run `bash scripts/register-codex.sh` for Codex CLI or `bash scripts/register-claude.sh` for Claude Desktop / Claude Code.
 

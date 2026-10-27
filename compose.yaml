@@ -422,11 +422,10 @@ services:
     cap_drop: [ALL]
 
   # -------------------------------------------------------------
-  # Extended Lab MCP Services (Profile: extended-mcp)
+  # Extended Lab MCP Services (Default startup)
   # -------------------------------------------------------------
   mcp-binwalk:
     build: ./mcp/binwalk
-    profiles: [extended-mcp, firmware]
     restart: unless-stopped
     ports: ["127.0.0.1:8307:8000/tcp"]
     volumes:
@@ -437,7 +436,6 @@ services:
 
   mcp-radare:
     build: ./mcp/radare
-    profiles: [extended-mcp, firmware]
     restart: unless-stopped
     ports: ["127.0.0.1:8308:8000/tcp"]
     volumes:
@@ -447,7 +445,6 @@ services:
 
   mcp-yara:
     build: ./mcp/yara
-    profiles: [extended-mcp, firmware]
     restart: unless-stopped
     ports: ["127.0.0.1:8309:8000/tcp"]
     volumes:
@@ -459,7 +456,6 @@ services:
 
   mcp-zeek:
     build: ./mcp/zeek
-    profiles: [extended-mcp, analysis]
     restart: unless-stopped
     ports: ["127.0.0.1:8311:8000/tcp"]
     volumes:
@@ -470,7 +466,6 @@ services:
 
   mcp-nmap:
     build: ./mcp/nmap
-    profiles: [extended-mcp, tools]
     restart: unless-stopped
     environment:
       TARGET_IP: ${TARGET_IP:-192.0.2.10}
@@ -480,7 +475,6 @@ services:
 
   mcp-adb:
     build: ./mcp/adb
-    profiles: [extended-mcp, mobile]
     restart: unless-stopped
     environment:
       ADB_SERVER_SOCKET: ${ADB_SERVER_SOCKET:-tcp:127.0.0.1:5037}
@@ -490,7 +484,6 @@ services:
 
   mcp-filesystem:
     build: ./mcp/filesystem
-    profiles: [extended-mcp, tools]
     restart: unless-stopped
     ports: ["127.0.0.1:8314:8000/tcp"]
     volumes:
@@ -504,7 +497,6 @@ services:
 
   mcp-database:
     build: ./mcp/database
-    profiles: [extended-mcp, database]
     restart: unless-stopped
     environment:
       RESEARCH_DATABASE_URL: postgresql+psycopg://research:${RESEARCH_DB_PASSWORD:-research}@research-db:5432/research
