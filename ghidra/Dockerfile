@@ -2,7 +2,7 @@
 # at build time; review downloaded release and pin GHIDRA_RELEASE_URL in CI.
 FROM eclipse-temurin:21-jdk-jammy
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3 python3-venv ca-certificates unzip binutils && rm -rf /var/lib/apt/lists/*
-RUN python3 -m venv /venv && /venv/bin/pip install --no-cache-dir 'fastapi>=0.115,<1' 'uvicorn>=0.30,<1' 'fastapi-mcp==0.4.0'
+RUN python3 -m venv /venv && /venv/bin/pip install --no-cache-dir 'fastapi>=0.115,<1' 'uvicorn>=0.30,<1' 'mcp<2,>=1.12.0' 'fastapi-mcp==0.4.0'
 ARG GHIDRA_RELEASE_URL=
 RUN GHIDRA_RELEASE_URL="$GHIDRA_RELEASE_URL" python3 - <<'PY'
 import json,os,urllib.request,pathlib,zipfile,shutil
