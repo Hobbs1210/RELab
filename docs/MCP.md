@@ -14,7 +14,12 @@
 
 **Check live tools:** `python3 scripts/check-mcp.py` for default eight; after starting Ghidra, run with `--all`. This must succeed on the actual host before claiming integrations are operational. Static config checks are not MCP handshakes.
 
-**Agent files:** Antigravity `.agents/mcp_config.json`, Codex `.codex/config.toml`, VS Code/Copilot `.vscode/mcp.json`, Cursor `.cursor/mcp.json`, portable `.mcp.json`. These are workspace-local and use loopback URLs relative to the agent process.
+**Agent files:** Antigravity `.agents/mcp_config.json`, Codex `.codex/config.toml`, VS Code/Copilot `.vscode/mcp.json`, Cursor `.cursor/mcp.json`, portable `.mcp.json`. These are workspace-local and use loopback URLs relative to the agent process. Run `bash scripts/register-codex.sh` for Codex CLI or `bash scripts/register-claude.sh` for Claude Desktop / Claude Code.
+
+**Integrated Research & Traffic Tools:**
+* **Live PCAP Streaming:** `bash scripts/stream-pcap.sh [--host re@DEBIAN_IP]` pipes live interface traffic directly into desktop Wireshark over SSH, complementing `device-pcap` MCP.
+* **Lab Root CA Export:** `bash scripts/export-ca.sh` exports the lab's TLS certificates (PEM, DER, Android Magisk `<hash>.0`) to `certs/export/` for target devices, enabling clean decryption by `device-mitm` and `device-api`.
+* **Cross-Layer Correlation:** `python3 scripts/correlate-traffic.py [--save]` audits DNS lookups vs. TLS ClientHello SNI and HTTP flows to flag direct IP connections (hardcoded fallbacks), DoH evasion, and domain fronting. Saved reports in `data/analysis/` are immediately indexed as evidence by `device-api` and `device-research`.
 
 **Mutations:** `device-api` MCP exposes only GET-style operations. For response/DNS/scenario edits and experiment creation/rollback, use `scripts/labctl.py` or localhost REST with the generated `.env` `LAB_ADMIN_TOKEN` in the `X-Lab-Token` header, **after approval**. Other community MCPs have their own permission model and should be reviewed before use.
 

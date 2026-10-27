@@ -2,7 +2,9 @@
 
 These checks do not require root, Docker, network access or a Debian VM.
 """
+import importlib
 import os
+import sys
 from pathlib import Path
 import subprocess
 
@@ -143,4 +145,62 @@ def test_setup_subcommands_supported():
     assert 'backup)' in body
     assert 'status)' in body
     assert 'restart)' in body
+
+
+def test_claude_registration_script():
+    bash = _bash_cmd()
+    path = ROOT / 'scripts/register-claude.sh'
+    assert path.is_file()
+    subprocess.run([bash, '-n', str(path)], check=True)
+    body = path.read_text(encoding='utf-8')
+    assert 'device-dns' in body
+    assert 'device-research' in body
+    assert 'device-workbench' in body
+
+
+def test_stream_pcap_script():
+    bash = _bash_cmd()
+    path = ROOT / 'scripts/stream-pcap.sh'
+    assert path.is_file()
+    subprocess.run([bash, '-n', str(path)], check=True)
+    res = subprocess.run([bash, str(path), '--help'], capture_output=True, text=True, check=True)
+    assert '--host' in res.stdout
+    assert '--filter' in res.stdout
+
+
+def test_export_ca_script():
+    bash = _bash_cmd()
+    path = ROOT / 'scripts/export-ca.sh'
+    assert path.is_file()
+    subprocess.run([bash, '-n', str(path)], check=True)
+    body = path.read_text(encoding='utf-8')
+    assert 'device-mitm-ca.crt' in body
+    assert 'android' in body
+
+
+def test_correlate_traffic_anomalies_detection():
+    sys.path.insert(0, str(ROOT / 'scripts'))
+    correlate_traffic = importlib.import_module('correlate-traffic')
+
+    dns_sample = [
+        {'question': {'name': 'api.vendor.com'}, 'client': '192.0.2.10', 'answer': [{'value': '93.184.216.34'}]}
+    ]
+    flow_sample = [
+        # Normal resolved flow
+        {'client_conn': {'peername': ['192.0.2.10', 49152]}, 'server_conn': {'peername': ['93.184.216.34', 443]},
+         'request': {'host': 'api.vendor.com', 'scheme': 'https', 'path': '/v1/config'}},
+        # Direct IP connection (not in DNS)
+        {'client_conn': {'peername': ['192.0.2.10', 49153]}, 'server_conn': {'peername': ['198.51.100.5', 443]},
+         'request': {'host': '198.51.100.5', 'scheme': 'https', 'path': '/heartbeat'}},
+        # DoH bypass attempt
+        {'client_conn': {'peername': ['192.0.2.10', 49154]}, 'server_conn': {'peername': ['1.1.1.1', 443]},
+         'request': {'host': 'cloudflare-dns.com', 'scheme': 'https', 'path': '/dns-query'}},
+    ]
+    report = correlate_traffic.correlate(dns_sample, flow_sample, target_ip='192.0.2.10')
+    assert report['dns_query_count'] == 1
+    assert report['observed_flows'] == 3
+    assert report['anomalies_detected'] >= 2
+    types = [a['type'] for a in report['anomalies']]
+    assert 'DIRECT_IP_CONNECTION' in types
+    assert 'ENCRYPTED_DNS_BYPASS' in types
 

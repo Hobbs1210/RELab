@@ -8,4 +8,7 @@ codex mcp add device-pcap --url http://127.0.0.1:8303/mcp
 codex mcp add device-ble --url http://127.0.0.1:8304/mcp
 codex mcp add device-docker --url http://127.0.0.1:8305/mcp
 codex mcp add device-api --url http://127.0.0.1:8090/mcp
+codex mcp add device-workbench --url http://127.0.0.1:8310/mcp
+codex mcp add device-research --url http://127.0.0.1:8320/mcp
+codex mcp add device-ghidra --url http://127.0.0.1:8306/mcp
 codex mcp list
